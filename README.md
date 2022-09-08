@@ -1,0 +1,2 @@
+# CustomizeManMachineVerification
+自定义人机验证平台，分为员工端和企业端

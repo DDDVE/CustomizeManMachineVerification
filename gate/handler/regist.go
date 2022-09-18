@@ -7,15 +7,8 @@ import (
 	"strings"
 )
 
-type LoginData struct {
-	Token string `json:"token"`
-}
-
-func Login(w http.ResponseWriter, r *http.Request) {
-	log.Println("进入登录模块")
-	//TODO: 重定向至登录模块
-
-	// 以下暂时保留方便测试
+func Regist(w http.ResponseWriter, r *http.Request) {
+	log.Println("进入注册模块")
 	// 根据最新的密钥生成token返回给用户
 	auth := strings.Split(r.Header.Get("Authorization"), "@==@")
 	if len(auth) < 2 {
@@ -35,5 +28,4 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			Token: userToken,
 		},
 	})
-
 }

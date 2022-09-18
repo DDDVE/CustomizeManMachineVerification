@@ -18,11 +18,29 @@ func InitGenerateKeyScheTask() {
 	year, month, day := time.Now().Date()
 	location, _ := time.LoadLocation("Asia/Shanghai")
 	// 获取项目启动的第二天零点的时间戳
-	t := time.Date(year, month, day+1, 0, 0, 0, 0, location).Unix()
-	// 获取当前时间距离第二天早上零点的时间间隔
-	duration := time.Now().Unix() - t
+	t := time.Date(year, month, day, 0, 0, 0, 0, location).Unix() + SecondsOfDay
+	// 获取当前时间距离第二天早上零点的秒数
+	duration := t - time.Now().Unix()
+	D := duration * int64(time.Second)
 	// 开启定时任务
-	sche := time.NewTimer(time.Duration(duration))
+	log.Println("距离第二天还有：", D)
+	// 注意time.Duration是纳秒
+	sche := time.NewTimer(time.Duration(D))
+
+	/**
+	// 测试定时任务，每五秒打印一次情况
+	test := time.NewTicker(10 * time.Second)
+	var i int64 = 1
+	for range test.C {
+		log.Println("还剩", duration-i*10, "秒")
+		i++
+		if i*10 >= duration {
+			break
+		}
+	}
+	test.Stop()
+	*/
+
 	// 当时间到了
 	<-sche.C
 	firstGenerateKeyTask()

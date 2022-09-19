@@ -45,7 +45,9 @@ var (
 	ApiToRandomString = map[string]string{}
 )
 
-var ApiGateRWMutex = new(sync.RWMutex)
+// ApiMap在被读的时候可能有新的注册或者宕机发生
+// 整体属于读多写少，故采用读写锁
+var ApiMapRWMutex = new(sync.RWMutex)
 
 // 初始化保存api网关的切片
 func InitApiGate() {
@@ -167,7 +169,12 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 		Port:    remotePort,
 		Type:    remoteType,
 	}
+
+	// 添加时上写锁
+	ApiMapRWMutex.Lock()
 	ApiMap[remoteType] = append(ApiMap[remoteType], apiGate)
+	ApiMapRWMutex.Unlock()
+
 	log.Printf("网关%s注册成功\n", apiAddres)
 	utils.WriteData(w, &utils.HttpRes{
 		Status: utils.HttpSucceed,

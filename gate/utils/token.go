@@ -14,8 +14,9 @@ type MyClaim struct {
 	jwt.StandardClaims
 }
 
-var Token *jwt.Token
-var Claim *MyClaim
+// 这个Token和Claim做成全局唯一的变量在并发环境下会导致用户的token模具被其他协程修改
+// var Token *jwt.Token
+// var Claim *MyClaim
 
 var (
 	//MySignedKey = []byte("dongyongwei&dve")
@@ -43,9 +44,9 @@ func InitFirstKey() {
 	log.Println("初始化平台密钥: ", MySignedKey[0])
 }
 
-func CreateToken(mobileNumber string) {
+func CreateToken(mobileNumber string) *jwt.Token {
 	// 首先初始化MyClaim
-	Claim = &MyClaim{
+	claim := &MyClaim{
 		MobileNumber: mobileNumber,
 		StandardClaims: jwt.StandardClaims{
 			Issuer:  JwtClaimIssuer,
@@ -54,12 +55,12 @@ func CreateToken(mobileNumber string) {
 	}
 	// 生成token对象
 	// 这里要采用对称加密否则会报错
-	Token = jwt.NewWithClaims(jwt.SigningMethodHS256, Claim)
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
 }
 
 // 根据最新的密钥生成token并返回
 func GenerateTokenString(mobileNumber string) (string, error) {
-	CreateToken(mobileNumber)
+	token := CreateToken(mobileNumber)
 	index := LenOfMySignedKey - 1
 	for index >= 0 && MySignedKey[index] == "" {
 		index--
@@ -68,7 +69,7 @@ func GenerateTokenString(mobileNumber string) (string, error) {
 		log.Println("平台密钥不存在！")
 		return "", errors.New("获取token失败")
 	}
-	s, err := Token.SignedString([]byte(MySignedKey[index]))
+	s, err := token.SignedString([]byte(MySignedKey[index]))
 	if err != nil {
 		log.Println("生成token报错: ", err)
 		return "", errors.New("获取token失败")
@@ -78,14 +79,14 @@ func GenerateTokenString(mobileNumber string) (string, error) {
 
 // 用户传入的token是否合法
 func CheckTokenString(userToken string, mobileNum string) bool {
-	CreateToken(mobileNum)
+	token := CreateToken(mobileNum)
 	for i := 0; i < LenOfMySignedKey; i++ {
 		if MySignedKey[i] == "" {
 			continue
 		}
-		ss, err := Token.SignedString([]byte(MySignedKey[i]))
+		ss, err := token.SignedString([]byte(MySignedKey[i]))
 		if err != nil {
-			log.Println("判断token时报错：", err)
+			log.Println("判断token时报错: ", err)
 			return false
 		}
 		if userToken == ss {

@@ -63,12 +63,12 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 	}
 	// 对父级目录做判断
 	switch path[0] {
-	case "edit":
-		EditGet(w, r)
-	case "audit":
-
-	case "feedback":
-
+	case utils.TypeOfApiEdit:
+		EditGet(w, r, path[0])
+	case utils.TypeOfApiAudit:
+		AuditPost(w, r, path[0])
+	case utils.TypeOfApiFeedback:
+		FeedbackGet(w, r, path[0])
 	default:
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpUrlCheckFalse,
@@ -87,12 +87,12 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 	// 对父级目录做判断
 	switch path[0] {
-	case "edit":
-
-	case "audit":
-
-	case "feedback":
-
+	case utils.TypeOfApiEdit:
+		EditPost(w, r, path[0])
+	case utils.TypeOfApiAudit:
+		AuditPost(w, r, path[0])
+	case utils.TypeOfApiFeedback:
+		FeedbackPost(w, r, path[0])
 	default:
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpUrlCheckFalse,

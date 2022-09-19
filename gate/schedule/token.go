@@ -27,25 +27,26 @@ func InitGenerateKeyScheTask() {
 	// 注意time.Duration是纳秒
 	sche := time.NewTimer(time.Duration(D))
 
-	// 测试定时任务，每五秒打印一次情况
-	test := time.NewTicker(10 * time.Second)
-	var i int64 = 1
-	for range test.C {
-		log.Println("还剩", duration-i*10, "秒")
-		i++
-		if i*10 >= duration {
-			break
-		}
-	}
-	test.Stop()
-	log.Println("倒计时结束, 马上执行定时任务")
+	// // 测试定时任务，每五秒打印一次情况
+	// test := time.NewTicker(10 * time.Second)
+	// var i int64 = 1
+	// for range test.C {
+	// 	log.Println("还剩", duration-i*10, "秒")
+	// 	i++
+	// 	if i*10 >= duration {
+	// 		break
+	// 	}
+	// }
+	// test.Stop()
+	// log.Println("倒计时结束, 马上执行定时任务")
+
 	// 当时间到了
 	<-sche.C
 	log.Println("定时任务来了!")
 	firstGenerateKeyTask()
 
 	// 第一次定时任务过后开启周期任务
-	ticker := time.NewTicker(3600 * time.Second)
+	ticker := time.NewTicker(SecondsOfDay * time.Second)
 	defer func() {
 		log.Println("周期性生成密钥任务停止")
 		ticker.Stop()

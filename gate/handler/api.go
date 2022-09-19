@@ -47,7 +47,11 @@ var (
 
 // ApiMap在被读的时候可能有新的注册或者宕机发生
 // 整体属于读多写少，故采用读写锁
-var ApiMapRWMutex = new(sync.RWMutex)
+var (
+	ApiMapRWMutex            = new(sync.RWMutex)
+	RandomStringToApiRWMutex = new(sync.RWMutex)
+	ApiToRandomStringRWMutex = new(sync.RWMutex)
+)
 
 // 初始化保存api网关的切片
 func InitApiGate() {
@@ -97,7 +101,9 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 
 	// 判断是否在api网关地址到随机字符串的映射里面
 	// 如果这个地址是第一次发来请求
+	ApiToRandomStringRWMutex.RLock()
 	if _, ok := ApiToRandomString[apiAddres]; !ok {
+		ApiToRandomStringRWMutex.RUnlock()
 		log.Printf("这是网关%s的第一次注册请求\n", apiAddres)
 		// 生成随机字符串
 		randomString := utils.GetRandomString(utils.LenOfKey)
@@ -111,8 +117,14 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// 保存映射关系
+		ApiToRandomStringRWMutex.Lock()
 		ApiToRandomString[apiAddres] = randomString
+		ApiToRandomStringRWMutex.Unlock()
+
+		RandomStringToApiRWMutex.Lock()
 		RandomStringToApi[randomString] = apiAddres
+		RandomStringToApiRWMutex.Unlock()
+
 		// 把密文响应给该地址
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpSucceed,
@@ -123,6 +135,7 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 		log.Printf("已将密文响应给网关%s\n", apiAddres)
 		return
 	}
+	ApiToRandomStringRWMutex.RUnlock()
 	log.Printf("这不是网关%s的第一次注册请求\n", apiAddres)
 	// 如果这个地址不是第一次发来请求
 	// 检查字符串原文是否匹配
@@ -138,7 +151,10 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	ApiToRandomStringRWMutex.RLock()
 	if plainRandomString != ApiToRandomString[apiAddres] {
+		ApiToRandomStringRWMutex.RUnlock()
 		log.Printf("网关%s解密后的字符串错误\n", apiAddres)
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpTokenCheckFalse,
@@ -146,7 +162,11 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	ApiToRandomStringRWMutex.RUnlock()
+
+	RandomStringToApiRWMutex.RLock()
 	if _, ok := RandomStringToApi[plainRandomString]; !ok {
+		RandomStringToApiRWMutex.RUnlock()
 		log.Printf("找不到网关%s解密后的字符串对应的IP地址\n", apiAddres)
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpTokenCheckFalse,
@@ -155,6 +175,7 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if RandomStringToApi[plainRandomString] != apiAddres {
+		RandomStringToApiRWMutex.RUnlock()
 		log.Printf("网关%s解密后的字符串与记录不匹配\n", apiAddres)
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpTokenCheckFalse,
@@ -162,6 +183,8 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	RandomStringToApiRWMutex.RUnlock()
+
 	log.Printf("网关%s返回的字符串验证通过, 开始注册\n", apiAddres)
 	// 生成ApiGate信息并注册到ApiMap中
 	apiGate := &ApiGate{

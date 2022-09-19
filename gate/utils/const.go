@@ -19,4 +19,31 @@ const (
 	HttpMethodCheckFalse = 4102
 	// 请求路径错误，例如不存在
 	HttpUrlCheckFalse = 4103
+	// 请求参数（字段）错误
+	HttpParamCheckFalse = 4104
+
+	// 请求通过校验，api注册业务出错
+	HttpApiRegistFalse = 4201
+)
+
+/**
+api网关相关常量
+*/
+const (
+	// 该类型在切片中的位置
+	PositionOfApiLogin    = 0
+	PositionOfApiEdit     = 1
+	PositionOfApiAudit    = 2
+	PositionOfApiFeedback = 3
+
+	// 该类型的名字
+	TypeOfApiLogin    = "login"
+	TypeOfApiEdit     = "edit"
+	TypeOfApiAudit    = "audit"
+	TypeOfApiFeedback = "feedback"
+)
+
+var (
+	// api网关类型切片
+	ApiGateSlice = []string{TypeOfApiLogin, TypeOfApiEdit, TypeOfApiAudit, TypeOfApiFeedback}
 )

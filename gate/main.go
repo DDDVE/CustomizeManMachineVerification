@@ -16,12 +16,19 @@ func main() {
 
 	// 初始化第一天的密钥
 	utils.InitFirstKey()
+
+	// 初始化api网关信息
+	handler.InitApiGate()
+
 	// todo: 从磁盘读取黑名单数据
 
 	// 登录
 	http.HandleFunc("/login", handler.Login)
 	// 注册
 	//http.HandleFunc("/regist", handler.Regist)
+
+	// api网关注册
+	http.HandleFunc("/apiRegist/*", handler.ApiRegist)
 
 	// 进入拦截器判断
 	http.HandleFunc("/", handler.Intercept)

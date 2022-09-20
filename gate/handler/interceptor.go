@@ -69,6 +69,8 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 		AuditPost(w, r, path[0])
 	case utils.TypeOfApiFeedback:
 		FeedbackGet(w, r, path[0])
+	case utils.TypeOfApiLogin:
+		LoginGet(w, r, path[0])
 	default:
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpUrlCheckFalse,
@@ -93,6 +95,8 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 		AuditPost(w, r, path[0])
 	case utils.TypeOfApiFeedback:
 		FeedbackPost(w, r, path[0])
+	case utils.TypeOfApiLogin:
+		LoginPost(w, r, path[0])
 	default:
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpUrlCheckFalse,

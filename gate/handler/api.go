@@ -16,11 +16,19 @@ import (
 // 注册时才创建
 type ApiGate struct {
 	Address string `json:"address"`
-	// 请求来自于对方哪个进程
+	// 请求来自于对方哪个端口
 	Port string `json:"port"`
 
 	// 类型，指该api网关服务于哪个类型的模块
 	Type string `json:"type"`
+
+	// 状态，表示可用或不可用
+	// 之所以引入状态是因为每次宕机都需要将该api网关删除，再将后面的移上来太麻烦
+	// 0=可用，1=不可用
+	Status int `json:"status"`
+
+	// 该api网关在该类的第几个
+	Index int `json:"index"`
 }
 
 // api网关注册时的响应信息
@@ -186,15 +194,30 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 	RandomStringToApiRWMutex.RUnlock()
 
 	log.Printf("网关%s返回的字符串验证通过, 开始注册\n", apiAddres)
+	//判断ApiMap是否已存在，如果存在直接改状态
+	ApiMapRWMutex.Lock()
+	for i := 0; i < len(ApiMap[remoteType]); i++ {
+		gate := ApiMap[remoteType][i]
+		// 如果该类型下ip和端口都相同则认为是同一个api网关
+		if remoteIp == gate.Address && remoteIp == gate.Port {
+			// 将状态重新改回可用
+			ApiMap[remoteType][i].Status = 0
+			ApiMapRWMutex.Unlock()
+			log.Printf("网关%s注册成功\n", apiAddres)
+			utils.WriteData(w, &utils.HttpRes{
+				Status: utils.HttpSucceed,
+				Data:   nil,
+			})
+			return
+		}
+	}
 	// 生成ApiGate信息并注册到ApiMap中
 	apiGate := &ApiGate{
 		Address: remoteIp,
 		Port:    remotePort,
 		Type:    remoteType,
+		Index:   len(ApiMap[remoteType]),
 	}
-
-	// 添加时上写锁
-	ApiMapRWMutex.Lock()
 	ApiMap[remoteType] = append(ApiMap[remoteType], apiGate)
 	ApiMapRWMutex.Unlock()
 

@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	// 初始化周期任务
+	// 初始化周期生成平台密钥任务
 	go schedule.InitGenerateKeyScheTask()
 
 	// 初始化第一天的密钥
@@ -19,6 +19,9 @@ func main() {
 
 	// 初始化api网关信息
 	handler.InitApiGate()
+
+	// 初始化api网关周期检查任务
+	go schedule.InitApiTestScheTask()
 
 	// todo: 从磁盘读取黑名单数据
 

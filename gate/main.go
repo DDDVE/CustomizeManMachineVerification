@@ -23,8 +23,8 @@ func main() {
 	// 初始化api网关周期检查任务
 	go schedule.InitApiTestScheTask()
 
-	// TODO: 从磁盘读取黑名单数据
-
+	// 初始化黑名单数据
+	handler.InitBlackIp()
 	// 登录
 	http.HandleFunc("/login", handler.Login)
 	// 注册

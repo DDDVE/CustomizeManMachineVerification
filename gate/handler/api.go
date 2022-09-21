@@ -68,9 +68,7 @@ func InitApiGate() {
 	for i := 0; i < len(utils.ApiGateSlice); i++ {
 		ApiMap[utils.ApiGateSlice[i]] = []*ApiGate{}
 	}
-
 	// 初始化各个api网关类型对应的公钥私钥
-	//TODO: 从文件中读取
 	pwd, err := os.Getwd()
 	if err != nil {
 		log.Panicln("获取工作目录报错: ", err, " 终止程序")
@@ -93,12 +91,15 @@ func InitApiGate() {
 		log.Panicln("解析网关私钥报错: ", err, " 终止程序")
 	}
 	log.Println("解析网关公钥私钥完成")
-
-	log.Println(ApiToPublicKey)
-	log.Println(ApiToPrivateKey)
 }
 
 func ApiRegist(w http.ResponseWriter, r *http.Request) {
+	//判断请求的ip是否在黑名单
+	ip := strings.Split(r.RemoteAddr, ":")[0]
+	if CheckBlackIp(ip) {
+		log.Printf("该地址%s在黑名单中, 已拦截\n", ip)
+		return
+	}
 	// 首先得到请求的地址
 	// 获取api网关的端口号
 	log.Println("进入网关注册模块")

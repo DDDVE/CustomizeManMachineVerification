@@ -1,16 +1,22 @@
 package handler
 
 import (
+	"fmt"
 	"gate/utils"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
 func Intercept(w http.ResponseWriter, r *http.Request) {
 	log.Println("进入拦截器")
-	//TODO: 判断请求的ip是否在黑名单
-
+	//判断请求的ip是否在黑名单
+	ip := strings.Split(r.RemoteAddr, ":")[0]
+	if CheckBlackIp(ip) {
+		log.Printf("该地址%s在黑名单中, 已拦截\n", ip)
+		return
+	}
 	// 验证token
 	autho := strings.Split(r.Header.Get("Authorization"), "@==@")
 	if len(autho) < 2 {
@@ -103,4 +109,30 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 			Data:   nil,
 		})
 	}
+}
+
+// 黑名单
+var BlackIpMap = map[string]bool{}
+
+func InitBlackIp() {
+	pwd, err := os.Getwd()
+	if err != nil {
+		log.Panicln("获取工作目录报错: ", err, " 终止程序")
+	}
+	context, err := utils.ReadFile(pwd + "\\blackIp.txt")
+	if err != nil {
+		log.Panicln("读取黑名单文件报错: ", err, " 终止程序")
+	}
+	ips := strings.Split(context, "\n")
+	for i := 0; i < len(ips); i++ {
+		BlackIpMap[ips[i]] = true
+	}
+	log.Println("读取黑名单完成")
+	for k, _ := range BlackIpMap {
+		fmt.Println(k)
+	}
+}
+
+func CheckBlackIp(ip string) bool {
+	return BlackIpMap[ip]
 }

@@ -13,6 +13,13 @@ type LoginData struct {
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	log.Println("进入登录模块")
+	//判断请求的ip是否在黑名单
+	ip := strings.Split(r.RemoteAddr, ":")[0]
+	if CheckBlackIp(ip) {
+		log.Printf("该地址%s在黑名单中, 已拦截\n", ip)
+		return
+	}
+
 	//TODO: 转发向至登录模块
 
 	// 以下暂时保留方便测试

@@ -13,7 +13,7 @@ type LoginData struct {
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	log.Println("进入登录模块")
-	//TODO: 重定向至登录模块
+	//TODO: 转发向至登录模块
 
 	// 以下暂时保留方便测试
 	// 根据最新的密钥生成token返回给用户

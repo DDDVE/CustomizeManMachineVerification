@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"encoding/json"
 	"gate/utils"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 )
@@ -61,7 +63,7 @@ var (
 	ApiToRandomStringRWMutex = new(sync.RWMutex)
 )
 
-// 初始化保存api网关的切片
+// 初始化保存api网关的切片和公钥私钥
 func InitApiGate() {
 	for i := 0; i < len(utils.ApiGateSlice); i++ {
 		ApiMap[utils.ApiGateSlice[i]] = []*ApiGate{}
@@ -69,11 +71,35 @@ func InitApiGate() {
 
 	// 初始化各个api网关类型对应的公钥私钥
 	//TODO: 从文件中读取
+	pwd, err := os.Getwd()
+	if err != nil {
+		log.Panicln("获取工作目录报错: ", err, " 终止程序")
+	}
+	context, err := utils.ReadFile(pwd + "\\apiKeys.txt")
+	if err != nil {
+		log.Panicln("读取网关公钥私钥文件时报错: ", err, " 终止程序")
+	}
+	ss := strings.Split(string(context), "@==@")
+	if len(ss) != 2 {
+		log.Panicln("网关公钥私钥文件格式错误, 终止程序")
+	}
+	publicKeys, privateKeys := ss[0], ss[1]
+	err = json.Unmarshal([]byte(publicKeys), &ApiToPublicKey)
+	if err != nil {
+		log.Panicln("解析网关公钥报错: ", err, " 终止程序")
+	}
+	err = json.Unmarshal([]byte(privateKeys), &ApiToPrivateKey)
+	if err != nil {
+		log.Panicln("解析网关私钥报错: ", err, " 终止程序")
+	}
+	log.Println("解析网关公钥私钥完成")
+
+	log.Println(ApiToPublicKey)
+	log.Println(ApiToPrivateKey)
 }
 
 func ApiRegist(w http.ResponseWriter, r *http.Request) {
 	// 首先得到请求的地址
-	// 参数校验
 	// 获取api网关的端口号
 	log.Println("进入网关注册模块")
 	remotePort := r.Header.Get("port")
@@ -84,11 +110,13 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
 	log.Println("获取api网关IP地址")
 	remoteAddr := strings.Split(r.RemoteAddr, ":")
 	// 获取该api网关ip
 	remoteIp := remoteAddr[0]
 	apiAddres := remoteIp + ":" + remotePort
+
 	log.Println("开始解析路由")
 	path := strings.Split(r.URL.Path, "/")
 	path = path[1:]
@@ -184,7 +212,7 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 	}
 	if RandomStringToApi[plainRandomString] != apiAddres {
 		RandomStringToApiRWMutex.RUnlock()
-		log.Printf("网关%s解密后的字符串与记录不匹配\n", apiAddres)
+		log.Printf("网关%s解密后的字符串与IP记录不匹配\n", apiAddres)
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpTokenCheckFalse,
 			Data:   nil,

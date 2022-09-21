@@ -32,7 +32,7 @@ const (
 	SecondsOfDay int64 = 86400
 )
 
-// todo: 把这些字段做成从本地文件里读取，不写入代码
+// TODO: 把这些字段做成从本地文件里读取，不写入代码
 const (
 	JwtClaimIssuer  = "dve"
 	JwtClaimSubject = "custom man-machine verify plat"

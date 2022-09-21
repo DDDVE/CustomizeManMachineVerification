@@ -23,7 +23,7 @@ func main() {
 	// 初始化api网关周期检查任务
 	go schedule.InitApiTestScheTask()
 
-	// todo: 从磁盘读取黑名单数据
+	// TODO: 从磁盘读取黑名单数据
 
 	// 登录
 	http.HandleFunc("/login", handler.Login)
@@ -35,10 +35,11 @@ func main() {
 
 	// 进入拦截器判断
 	http.HandleFunc("/", handler.Intercept)
-
+	//fmt.Println(os.Getwd())
 	if err := http.ListenAndServe("localhost:8080", nil); err != nil {
 		log.Panic("启动监听失败")
 		return
 	}
+
 	log.Println("项目启动成功，监听中...")
 }

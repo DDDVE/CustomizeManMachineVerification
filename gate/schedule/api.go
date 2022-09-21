@@ -75,7 +75,7 @@ func ApiTestScheTask() {
 	i := 0
 	handler.ApiMapRWMutex.Lock()
 	for k, v := range ApiCheckoutMap {
-		for len(v) > 0 {
+		for len(ApiCheckoutMap[k]) > 0 {
 			i++
 			handler.ApiMap[k][v[0]].Status = 1
 			ApiCheckoutMap[k] = ApiCheckoutMap[k][1:]

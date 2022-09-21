@@ -46,9 +46,9 @@ func CommonRedirct(w http.ResponseWriter, r *http.Request, apiType string) {
 		return
 	}
 	redirectApiGate := ApiMap[apiType][pos]
-	// 解读锁
-	ApiMapRWMutex.RUnlock()
 	// 重定向
 	w.Header().Set("location", redirectApiGate.Address+":"+redirectApiGate.Port)
+	// 解读锁
+	ApiMapRWMutex.RUnlock()
 	w.WriteHeader(http.StatusFound)
 }

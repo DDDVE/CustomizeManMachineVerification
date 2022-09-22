@@ -26,7 +26,7 @@ func main() {
 	// 初始化黑名单数据
 	handler.InitBlackIp()
 	// 登录
-	http.HandleFunc("/login", handler.Login)
+	http.HandleFunc("/login/employee", handler.Login)
 	// 注册
 	//http.HandleFunc("/regist", handler.Regist)
 
@@ -40,6 +40,4 @@ func main() {
 		log.Panic("启动监听失败")
 		return
 	}
-
-	log.Println("项目启动成功，监听中...")
 }

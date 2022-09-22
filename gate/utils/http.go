@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -51,4 +52,24 @@ func SendHttpGet(url string) (string, error) {
 		}
 	}
 	return result.String(), nil
+}
+
+// 转发POST请求
+func RetransmissionPost(req *http.Request) ([]byte, error) {
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("转发POST请求报错: ", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("读取转发响应报错: ", err)
+		return nil, err
+	}
+	return body, nil
 }

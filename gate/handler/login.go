@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"encoding/json"
 	"gate/utils"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -19,21 +21,67 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		log.Printf("该地址%s在黑名单中, 已拦截\n", ip)
 		return
 	}
-
-	//TODO: 转发向至登录模块
-
-	// 以下暂时保留方便测试
-	// 根据最新的密钥生成token返回给用户
-	auth := strings.Split(r.Header.Get("Authorization"), "@==@")
-	if len(auth) < 2 {
-		log.Println("请求头不合法")
-		w.WriteHeader(http.StatusBadRequest)
+	// 查找可用的login类型api网关
+	pos := utils.FindApiGateToRedirect(utils.TypeOfApiLogin, ip)
+	ApiMapRWMutex.RLock()
+	pos = pos % len(ApiMap[utils.TypeOfApiLogin])
+	if ApiMap[utils.TypeOfApiLogin][pos].Status != 0 {
+		pos = FindValidApiGate(pos, pos, utils.TypeOfApiLogin)
+	}
+	if pos == -1 {
+		utils.WriteData(w, &utils.HttpRes{
+			Status: utils.HttpRefuse,
+			Data:   nil,
+		})
 		return
 	}
-	userMobile := auth[1]
+	r.Host = ApiMap[utils.TypeOfApiLogin][pos].Address + ":" + ApiMap[utils.TypeOfApiLogin][pos].Port
+	ApiMapRWMutex.RUnlock()
+	// 发送post请求
+	context, err := utils.RetransmissionPost(r)
+	// 接收响应数据并判断
+	if err != nil {
+		utils.WriteData(w, &utils.HttpRes{
+			Status: utils.HttpRefuse,
+			Data:   nil,
+		})
+		return
+	}
+	res := map[string]string{}
+	err = json.Unmarshal(context, &res)
+	if err != nil {
+		log.Println("解析转发响应体报错: ", err)
+		utils.WriteData(w, &utils.HttpRes{
+			Status: utils.HttpRefuse,
+			Data:   nil,
+		})
+		return
+	}
+	// 如果响应体为空则认为登陆失败
+	if res["status"] != strconv.Itoa(utils.HttpSucceed) {
+		utils.WriteData(w, &utils.HttpRes{
+			Status: utils.HttpRefuse,
+			Data:   nil,
+		})
+		return
+	}
+	// 根据最新的密钥生成token返回给用户
+	auth := strings.Split(r.Header.Get("Authorization"), "@==@")
+	if len(auth) > 1 {
+		log.Printf("主机%s的请求头不合法\n", ip)
+		utils.WriteData(w, &utils.HttpRes{
+			Status: utils.HttpTokenCheckFalse,
+			Data:   nil,
+		})
+		return
+	}
+	userMobile := auth[0]
 	userToken, err := utils.GenerateTokenString(userMobile)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		utils.WriteData(w, &utils.HttpRes{
+			Status: utils.HttpRefuse,
+			Data:   nil,
+		})
 		return
 	}
 	utils.WriteData(w, &utils.HttpRes{
@@ -42,7 +90,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			Token: userToken,
 		},
 	})
-
 }
 
 func LoginGet(w http.ResponseWriter, r *http.Request, apiType string) {
@@ -53,4 +100,9 @@ func LoginGet(w http.ResponseWriter, r *http.Request, apiType string) {
 func LoginPost(w http.ResponseWriter, r *http.Request, apiType string) {
 	log.Printf("进入%s重定向板块, %v方法\n", apiType, r.Method)
 	CommonRedirct(w, r, apiType)
+}
+
+// 转发用户的登录请求并判断是否登录成功
+func SendLoginRequest() {
+
 }

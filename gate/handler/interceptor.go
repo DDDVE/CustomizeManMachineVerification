@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"gate/utils"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 func Intercept(w http.ResponseWriter, r *http.Request) {
@@ -17,6 +19,19 @@ func Intercept(w http.ResponseWriter, r *http.Request) {
 		log.Printf("该地址%s在黑名单中, 已拦截\n", ip)
 		return
 	}
+
+	// 限流
+	ctx, _ := context.WithTimeout(context.Background(), utils.LinkTimeOut*time.Second)
+	err := utils.Limiter.Wait(ctx)
+	if err != nil {
+		log.Printf("主机%s因限流, 获取令牌失败: %+v", ip, err)
+		utils.WriteData(w, &utils.HttpRes{
+			Status: utils.HttpRefuse,
+			Data:   nil,
+		})
+		return
+	}
+
 	// 验证token
 	autho := strings.Split(r.Header.Get("Authorization"), "@==@")
 	if len(autho) < 2 {

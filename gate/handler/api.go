@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"gate/utils"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 /**
@@ -100,6 +102,19 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 		log.Printf("该地址%s在黑名单中, 已拦截\n", ip)
 		return
 	}
+
+	// 限流
+	ctx, _ := context.WithTimeout(context.Background(), utils.LinkTimeOut*time.Second)
+	err := utils.Limiter.Wait(ctx)
+	if err != nil {
+		log.Printf("主机%s因限流, 获取令牌失败: %+v", ip, err)
+		utils.WriteData(w, &utils.HttpRes{
+			Status: utils.HttpRefuse,
+			Data:   nil,
+		})
+		return
+	}
+
 	// 首先得到请求的地址
 	// 获取api网关的端口号
 	log.Println("进入网关注册模块")

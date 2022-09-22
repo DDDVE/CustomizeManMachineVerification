@@ -47,3 +47,6 @@ var (
 	// api网关类型切片
 	ApiGateSlice = []string{TypeOfApiLogin, TypeOfApiEdit, TypeOfApiAudit, TypeOfApiFeedback}
 )
+
+// 统一连接过期时间
+const LinkTimeOut = 5

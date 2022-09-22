@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"gate/utils"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type LoginData struct {
@@ -21,6 +23,19 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		log.Printf("该地址%s在黑名单中, 已拦截\n", ip)
 		return
 	}
+
+	// 限流
+	ctx, _ := context.WithTimeout(context.Background(), utils.LinkTimeOut*time.Second)
+	err := utils.Limiter.Wait(ctx)
+	if err != nil {
+		log.Printf("主机%s因限流, 获取令牌失败: %+v", ip, err)
+		utils.WriteData(w, &utils.HttpRes{
+			Status: utils.HttpRefuse,
+			Data:   nil,
+		})
+		return
+	}
+
 	// 查找可用的login类型api网关
 	pos := utils.FindApiGateToRedirect(utils.TypeOfApiLogin, ip)
 	ApiMapRWMutex.RLock()

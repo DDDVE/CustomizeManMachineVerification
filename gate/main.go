@@ -25,6 +25,10 @@ func main() {
 
 	// 初始化黑名单数据
 	handler.InitBlackIp()
+
+	// 初始化令牌桶
+	utils.InitLimit()
+
 	// 登录
 	http.HandleFunc("/login/employee", handler.Login)
 	// 注册

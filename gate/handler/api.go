@@ -6,7 +6,6 @@ import (
 	"gate/utils"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -71,11 +70,7 @@ func InitApiGate() {
 		ApiMap[utils.ApiGateSlice[i]] = []*ApiGate{}
 	}
 	// 初始化各个api网关类型对应的公钥私钥
-	pwd, err := os.Getwd()
-	if err != nil {
-		log.Panicln("获取工作目录报错: ", err, " 终止程序")
-	}
-	context, err := utils.ReadFile(pwd + "\\apiKeys.txt")
+	context, err := utils.ReadFile(utils.PWD + "\\apiKeys.txt")
 	if err != nil {
 		log.Panicln("读取网关公钥私钥文件时报错: ", err, " 终止程序")
 	}

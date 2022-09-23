@@ -43,3 +43,11 @@ func ReadFile(dir string) (string, error) {
 	}
 	return string(context), nil
 }
+
+func Sum(a []int) int {
+	sum := 0
+	for i := 0; i < len(a); i++ {
+		sum += a[i]
+	}
+	return sum
+}

@@ -11,6 +11,9 @@ import (
 )
 
 func main() {
+	// 初始化服务降级
+	utils.InitLevel()
+
 	// 初始化周期生成平台密钥任务
 	go schedule.InitGenerateKeyScheTask()
 
@@ -39,7 +42,6 @@ func main() {
 
 	// 进入拦截器判断
 	http.HandleFunc("/", handler.Intercept)
-	//fmt.Println(os.Getwd())
 	if err := http.ListenAndServe("localhost:8080", nil); err != nil {
 		log.Panic("启动监听失败")
 		return

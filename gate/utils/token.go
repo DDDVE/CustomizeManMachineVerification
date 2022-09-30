@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log"
 	"math/rand"
-	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -78,23 +77,33 @@ func GenerateTokenString(mobileNumber string) (string, error) {
 }
 
 // 用户传入的token是否合法
-func CheckTokenString(userToken string, mobileNum string) bool {
-	token := CreateToken(mobileNum)
-	for i := 0; i < LenOfMySignedKey; i++ {
-		if MySignedKey[i] == "" {
-			continue
-		}
-		ss, err := token.SignedString([]byte(MySignedKey[i]))
-		if err != nil {
-			log.Println("判断token时报错: ", err)
-			return false
-		}
-		if userToken == ss {
-			return true
-		}
+func CheckTokenString(userToken string) string {
+	token, _ := jwt.ParseWithClaims(userToken, &MyClaim{}, func(t *jwt.Token) (interface{}, error) {
+		return []byte(MySignedKey[0]), nil
+	})
+	claims, ok := token.Claims.(*MyClaim)
+	if ok && token.Valid {
+		//已经验证成功，说明token没问题，拿到的手机号也是加密时传入的手机号
+		return claims.MobileNumber
 	}
-	log.Println("token不正确")
-	return false
+	return ""
+	// token字符串可以解密直接拿到手机号，就不用@==@拼接手机号了
+	// token := CreateToken(mobileNum)
+	// for i := 0; i < LenOfMySignedKey; i++ {
+	// 	if MySignedKey[i] == "" {
+	// 		continue
+	// 	}
+	// 	ss, err := token.SignedString([]byte(MySignedKey[i]))
+	// 	if err != nil {
+	// 		log.Println("判断token时报错: ", err)
+	// 		return false
+	// 	}
+	// 	if userToken == ss {
+	// 		return true
+	// 	}
+	// }
+	// log.Println("token不正确")
+	// return false
 }
 
 // 随机字符串的来源
@@ -102,12 +111,28 @@ const randomStringSource = "0123456789abcdefghigklmnopqrstuvwxyzABCDEFGHIJKLMNOP
 
 // 生成随机字符串
 func GetRandomString(length int) string {
-	//plus := rand.Int63n(SecondsOfDay)
-	rand.Seed(time.Now().UnixNano())
+	//   用crypto/rand生成随机数更随机但速度稍慢，密钥可以直接存
+	//   []byte类型，加解密也都是用[]byte,就不用来回转化了
+	randomBytes := make([]byte, length)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		log.Println("生成随机数报错", err)
+	}
+	//   return randomBytes
+	// 返回string用下面代码
 	res := make([]byte, length)
 	for i := 0; i < length; i++ {
-		Index := rand.Intn(len(randomStringSource))
+		Index := int(randomBytes[i]) % len(randomStringSource)
 		res[i] = randomStringSource[Index]
 	}
 	return string(res)
+
+	//plus := rand.Int63n(SecondsOfDay)
+	// rand.Seed(time.Now().UnixNano())
+	// res := make([]byte, length)
+	// for i := 0; i < length; i++ {
+	// 	Index := rand.Intn(len(randomStringSource))
+	// 	res[i] = randomStringSource[Index]
+	// }
+	// return string(res)
 }

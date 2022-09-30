@@ -47,7 +47,7 @@ var (
 	// api网关种类及对应的公钥
 	ApiToPublicKey = map[string]string{}
 	// api网关种类及对应的私钥
-	ApiToPrivateKey = map[string]string{}
+	// ApiToPrivateKey = map[string]string{}
 
 	// api网关地址：address:8080
 	// 随机字符串到api网关地址的映射
@@ -74,20 +74,21 @@ func InitApiGate() {
 	if err != nil {
 		log.Panicln("读取网关公钥私钥文件时报错: ", err, " 终止程序")
 	}
-	ss := strings.Split(string(context), "@==@")
-	if len(ss) != 2 {
-		log.Panicln("网关公钥私钥文件格式错误, 终止程序")
-	}
-	publicKeys, privateKeys := ss[0], ss[1]
+	// ss := strings.Split(string(context), "@==@")
+	// if len(ss) != 2 {
+	// 	log.Panicln("网关公钥私钥文件格式错误, 终止程序")
+	// }
+	// publicKeys, privateKeys := ss[0], ss[1]
+	publicKeys := string(context)
 	err = json.Unmarshal([]byte(publicKeys), &ApiToPublicKey)
 	if err != nil {
 		log.Panicln("解析网关公钥报错: ", err, " 终止程序")
 	}
-	err = json.Unmarshal([]byte(privateKeys), &ApiToPrivateKey)
-	if err != nil {
-		log.Panicln("解析网关私钥报错: ", err, " 终止程序")
-	}
-	log.Println("解析网关公钥私钥完成")
+	// err = json.Unmarshal([]byte(privateKeys), &ApiToPrivateKey)
+	// if err != nil {
+	// 	log.Panicln("解析网关私钥报错: ", err, " 终止程序")
+	// }
+	// log.Println("解析网关公钥私钥完成")
 }
 
 func ApiRegist(w http.ResponseWriter, r *http.Request) {

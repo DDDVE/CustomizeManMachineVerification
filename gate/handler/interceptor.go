@@ -15,7 +15,7 @@ func Intercept(w http.ResponseWriter, r *http.Request) {
 	//判断请求的ip是否在黑名单
 	ip := strings.Split(r.RemoteAddr, ":")[0]
 	if CheckBlackIp(ip) {
-		log.Printf("该地址%s在黑名单中, 已拦截\n", ip)
+		// log.Printf("该地址%s在黑名单中, 已拦截\n", ip)
 		return
 	}
 
@@ -24,7 +24,7 @@ func Intercept(w http.ResponseWriter, r *http.Request) {
 	reqLevel, ok := utils.URLLevelMap[path]
 	// 如果此路径不存在
 	if !ok {
-		log.Printf("主机%s请求的路径%s不存在\n", ip, path)
+		// log.Printf("主机%s请求的路径%s不存在\n", ip, path)
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpUrlCheckFalse,
 			Data:   nil,
@@ -32,23 +32,23 @@ func Intercept(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// 如果此时url级别低于系统级别(数字更大)
-	utils.OsLevelRWMutex.RLock()
+	// utils.OsLevelRWMutex.RLock()
 	if reqLevel > utils.OsLevel {
-		utils.OsLevelRWMutex.RUnlock()
-		log.Printf("主机%s请求的路径%s级别过低: %d\n", ip, path, reqLevel)
+		// utils.OsLevelRWMutex.RUnlock()
+		// log.Printf("主机%s请求的路径%s级别过低: %d\n", ip, path, reqLevel)
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpRefuse,
 			Data:   nil,
 		})
 		return
 	}
-	utils.OsLevelRWMutex.RUnlock()
+	// utils.OsLevelRWMutex.RUnlock()
 	// 级别高于等于系统级别就放行
 	// 限流
 	ctx, _ := context.WithTimeout(context.Background(), utils.LinkTimeOut*time.Second)
 	err := utils.Limiter.Wait(ctx)
 	if err != nil {
-		log.Printf("主机%s因限流, 获取令牌失败: %+v", ip, err)
+		// log.Printf("主机%s因限流, 获取令牌失败: %+v", ip, err)
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpRefuse,
 			Data:   nil,
@@ -57,27 +57,28 @@ func Intercept(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 验证token
-	autho := strings.Split(r.Header.Get("Authorization"), "@==@")
-	if len(autho) < 2 {
-		log.Println("请求头不合法")
+	// autho := strings.Split(r.Header.Get("Authorization"), "@==@")
+	// if len(autho) < 2 {
+	// 	// log.Println("请求头不合法")
+	// 	utils.WriteData(w, &utils.HttpRes{
+	// 		Status: utils.HttpTokenCheckFalse,
+	// 		Data:   nil,
+	// 	})
+	// 	// 这里打印普通信息后会往下继续执行，所以需要return
+	// 	return
+	// }
+	// userToken := autho[0]
+	// userMobile := autho[1]
+	userToken := r.Header.Get("Authorization")
+	if utils.CheckTokenString(userToken) == "" {
+		// log.Println("请求头不合法")
 		utils.WriteData(w, &utils.HttpRes{
 			Status: utils.HttpTokenCheckFalse,
 			Data:   nil,
 		})
-		// 这里打印普通信息后会往下继续执行，所以需要return
 		return
 	}
-	userToken := autho[0]
-	userMobile := autho[1]
-	if !utils.CheckTokenString(userToken, userMobile) {
-		log.Println("请求头不合法")
-		utils.WriteData(w, &utils.HttpRes{
-			Status: utils.HttpTokenCheckFalse,
-			Data:   nil,
-		})
-		return
-	}
-	log.Println("用户token校验通过")
+	// log.Println("用户token校验通过")
 	// token验证通过后对url做匹配，并分配给不同的handler
 	// 首先对请求类型做判断
 	switch r.Method {
@@ -99,7 +100,7 @@ const (
 )
 
 func HandleGet(w http.ResponseWriter, r *http.Request) {
-	log.Println("进入get方法处理")
+	// log.Println("进入get方法处理")
 	// 获取第一级的请求目录，如edit，audit，feedback
 	path := strings.Split(r.URL.Path, "/")
 	path = path[1:]
@@ -125,7 +126,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlePost(w http.ResponseWriter, r *http.Request) {
-	log.Println("进入post方法处理")
+	// log.Println("进入post方法处理")
 	// 获取第一级的请求目录，如edit，audit，feedback
 	path := strings.Split(r.URL.Path, "/")
 	path = path[1:]

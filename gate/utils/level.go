@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -24,7 +23,8 @@ var URLLevelMap map[string]int
 
 // 系统请求级别
 var OsLevel int
-var OsLevelRWMutex = new(sync.RWMutex)
+
+// var OsLevelRWMutex = new(sync.RWMutex)
 
 const (
 	URLLevel1 = 1
@@ -103,25 +103,25 @@ func CheckOsLevel() {
 		// 求五次平均值再判断是否要改变级别
 		rate = Sum(osLevelRecord) / CPUCheckAverageNum
 		if rate >= CPULevelLow && rate < CPULevelMiddle {
-			OsLevelRWMutex.Lock()
+			// OsLevelRWMutex.Lock()
 			log.Printf("CPU平均使用率为: %d, 修改系统请求级别为: %d\n", rate, URLLevel3)
 			OsLevel = URLLevel3
-			OsLevelRWMutex.Unlock()
+			// OsLevelRWMutex.Unlock()
 		} else if rate >= CPULevelMiddle && rate < CPULevelHigh {
-			OsLevelRWMutex.Lock()
+			// OsLevelRWMutex.Lock()
 			log.Printf("CPU平均使用率为: %d, 修改系统请求级别为: %d\n", rate, URLLevel2)
 			OsLevel = URLLevel2
-			OsLevelRWMutex.Unlock()
+			// OsLevelRWMutex.Unlock()
 		} else if rate >= CPULevelHigh {
-			OsLevelRWMutex.Lock()
+			// OsLevelRWMutex.Lock()
 			log.Printf("CPU平均使用率为: %d, 修改系统请求级别为: %d\n", rate, URLLevel1)
 			OsLevel = URLLevel1
-			OsLevelRWMutex.Unlock()
+			// OsLevelRWMutex.Unlock()
 		} else {
-			OsLevelRWMutex.Lock()
+			// OsLevelRWMutex.Lock()
 			log.Printf("CPU平均使用率为: %d, 修改系统请求级别为: %d\n", rate, URLLevel4)
 			OsLevel = URLLevel4
-			OsLevelRWMutex.Unlock()
+			// OsLevelRWMutex.Unlock()
 		}
 	}
 

@@ -66,7 +66,7 @@ func InitGenerateKeyScheTask() {
 func firstGenerateKeyTask() {
 	// 为今天生成随机平台密钥
 	keyForToday := utils.GetRandomString(utils.LenOfKey)
-	log.Println("生成今天的平台随机密钥: ", keyForToday)
+	// log.Println("生成今天的平台随机密钥: ", keyForToday)
 	// 放入密钥
 	utils.MySignedKey[1] = keyForToday
 }

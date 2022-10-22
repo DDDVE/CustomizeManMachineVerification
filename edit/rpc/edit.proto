@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package edit;
+
+// protoc-gen-go 版本大于1.4.0, proto文件需要加上go_package,否则无法生成
+option go_package = "./edit";
+
+message ItemRequest {
+    string  mobileNum     = 1;
+    string  questionType  = 2;
+	string  question      = 3;      
+	string  answer        = 4;      
+	string	disturbAnswer = 5;
+}
+message ItemResponse {}
+
+message UserInfoRequest {
+    string  mobileNum = 1;
+}
+message UserInfoResponse {
+    string  employeeLevel     = 1;
+	string	contributionScore = 2;
+	string  auditScore        = 3;
+	string  registrationTime  = 4;
+}
+
+service Edit {
+    rpc submitItem(ItemRequest) returns (ItemResponse);
+    rpc userInfo(UserInfoRequest) returns (UserInfoResponse);
+}
+
+

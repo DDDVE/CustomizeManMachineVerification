@@ -1,0 +1,23 @@
+syntax = "v1"
+
+type (
+	OutputReq {
+		QuestionType     int    `form:"questionType"`
+		FirmID           string `form:"firmID"`
+		CurrentTimestamp string `form:"currentTimestamp"`
+		DigitalSignature string `form:"digitalSignature"`
+	}
+
+	OutputReply {
+		Question      string `json:"question"`
+		Answer        string `json:"answer"`
+		DisturbAnswer string    `json:"disturbAnswer"`
+	}
+)
+
+service output {
+	@handler output
+	get /output (OutputReq) returns (OutputReply)
+}
+
+goctl api go -api output.api -dir .

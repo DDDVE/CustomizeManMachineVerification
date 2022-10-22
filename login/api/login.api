@@ -1,0 +1,45 @@
+syntax = "v1"
+
+type (
+	QuestionReq   struct{}
+	QuestionReply {
+		Question     string `json:"question"`
+		RandomAnswer string `json:"randomAnswer"`
+		Token        string `json:"token"`
+	}
+
+	IsAnswerReq {
+		Answer   string `form:"answer"`
+		Token    string `header:"authorization"`
+	}
+	IsAnswerReply {
+		Result bool `json:"result"`
+	}
+
+	SendMsgReq {
+		MobileNum string `form:"mobileNum"`
+		Token     string `header:"authorization"`
+	}
+	SendMsgReply struct{}
+
+	EmployeeReq {
+		MobileNum string `json:"mobileNum"`
+		MsgCode   string `json:"msgCode"`
+		Token     string `header:"authorization"`
+	}
+	EmployeeReply {
+		Token string `json:"token,optional"`
+	}
+)
+service login {
+	@handler getQuestion
+	get /login/question  (QuestionReq) returns (QuestionReply)
+	@handler isAnswer
+	get /login/isAnswer  (IsAnswerReq) returns (IsAnswerReply)
+	@handler SendMsg
+	get /login/sendMsg   (SendMsgReq)  returns (SendMsgReply)
+	@handler Employee
+	post /login/employee (EmployeeReq) returns (EmployeeReply)
+}
+
+goctl api go -api login.api -dir .

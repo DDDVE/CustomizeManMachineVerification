@@ -15,6 +15,7 @@ func TestExecCommand(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
+	fmt.Print(string(r))
 	rate := strings.Split(string(r), "\n")[1][:4]
 	fmt.Print(rate)
 	for i := len(rate) - 1; i >= 0; i-- {

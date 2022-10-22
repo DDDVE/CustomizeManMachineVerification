@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package output;
+
+option go_package = "./output";
+
+message OutputRequest {
+    uint32 questionType = 1;
+}
+
+message OutputResponse {
+    string question = 1;
+    string answer = 2;
+    string disturbAnswer = 3;
+}
+
+service Output {
+    rpc getItem(OutputRequest) returns(OutputResponse);
+}
+
+goctl rpc protoc output.proto --go_out=./types --go-grpc_out=./types --zrpc_out=.

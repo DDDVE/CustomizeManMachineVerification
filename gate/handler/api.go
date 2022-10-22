@@ -1,11 +1,16 @@
 package handler
 
 import (
-	"context"
+	"bufio"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"gate/utils"
-	"log"
+	"gate/utils/log"
+	"io"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -14,256 +19,209 @@ import (
 /**
 关于api网关注册
 */
+const (
+	//api
+	OUTPUT_MODULE_ID   = 0
+	LOGIN_MODULE_ID    = 1
+	EDIT_MODULE_ID     = 2
+	AUDIT_MODULE_ID    = 3
+	FEEDBACK_MODULE_ID = 4
+	MODULE_COUNT       = 5
 
-// api网关对象
-// 注册时才创建
-type ApiGate struct {
-	Address string `json:"address"`
-	// 请求来自于对方哪个端口
-	Port string `json:"port"`
+	//api注册
+	RETRY_TIMES                 = 3
+	REGIST_REQUEST_TIMEOUT      = 3
+	DIGITAL_SIGNATURE_CONNECTOR = "@==@"
+	API_PUBLIC_KEY_FILE         = "./conf/apipublic.pem"
 
-	// 类型，指该api网关服务于哪个类型的模块
-	Type string `json:"type"`
+	//api持久化
+	API_DATA_FILE_1 = "./conf/apidata1.log"
+	API_DATA_FILE_2 = "./conf/apidata2.log"
 
-	// 状态，表示可用或不可用
-	// 之所以引入状态是因为每次宕机都需要将该api网关删除，再将后面的移上来太麻烦
-	// 0=可用，1=不可用
-	Status int `json:"status"`
-
-	// 该api网关在该类的第几个
-	Index int `json:"index"`
-}
-
-// api网关注册时的响应信息
-type ApiRegistRes struct {
-	// 加密后的字符串
-	Token string `json:"token"`
-}
-
-var (
-	// 类型名称 -> api网关集群信息
-	ApiMap = map[string][]*ApiGate{}
-
-	// api网关种类及对应的公钥
-	ApiToPublicKey = map[string]string{}
-	// api网关种类及对应的私钥
-	// ApiToPrivateKey = map[string]string{}
-
-	// api网关地址：address:8080
-	// 随机字符串到api网关地址的映射
-	RandomStringToApi = map[string]string{}
-	// api网关地址到随机字符串的映射
-	ApiToRandomString = map[string]string{}
+	//api定时任务
+	REQUEST_TIMEOUT       = 3
+	API_GATE_CHECK_PERIOD = 10
+	REQUEST_URL_PREFIX    = "http://"
+	REQUEST_URL_SUFFIX    = "/ping"
 )
 
-// ApiMap在被读的时候可能有新的注册或者宕机发生
-// 整体属于读多写少，故采用读写锁
 var (
-	ApiMapRWMutex            = new(sync.RWMutex)
-	RandomStringToApiRWMutex = new(sync.RWMutex)
-	ApiToRandomStringRWMutex = new(sync.RWMutex)
+	Button             chan struct{} //控制定时任务的开关
+	ApiRWLock          sync.RWMutex  //
+	ApiPersistenceLock sync.Mutex
+	ApiDataFiles       = [2]string{API_DATA_FILE_1, API_DATA_FILE_2}
+	apiPublicKeyFile   = API_PUBLIC_KEY_FILE
 )
 
-// 初始化保存api网关的切片和公钥私钥
+//暂时赋值，最好直接在文件读取
+var ApiData = [MODULE_COUNT]Module{
+	{ModuleID: 0, ApiCount: 0, ModuleName: "output", ApiAddrs: []string{}, modulePublicKeyPath: apiPublicKeyFile},
+	{ModuleID: 1, ApiCount: 0, ModuleName: "login", ApiAddrs: []string{}, modulePublicKeyPath: apiPublicKeyFile},
+	{ModuleID: 2, ApiCount: 0, ModuleName: "edit", ApiAddrs: []string{}, modulePublicKeyPath: apiPublicKeyFile},
+	{ModuleID: 3, ApiCount: 0, ModuleName: "audit", ApiAddrs: []string{}, modulePublicKeyPath: apiPublicKeyFile},
+	{ModuleID: 4, ApiCount: 0, ModuleName: "feedback", ApiAddrs: []string{}, modulePublicKeyPath: apiPublicKeyFile},
+}
+
+type Module struct {
+	ModuleID            int
+	ApiCount            int
+	ModuleName          string
+	ApiAddrs            []string
+	modulePublicKeyPath string
+}
+
+//初始化时加载绝对路径
+// func init() {
+// 	PWD, err := os.Getwd()
+// 	if err != nil {
+// 		log.Error("获取工作目录报错: ", err)
+// 	} else {
+// 		ApiDataFiles[0] = filepath.Join(PWD, ApiDataFiles[0])
+// 		ApiDataFiles[1] = filepath.Join(PWD, ApiDataFiles[1])
+// 		apiPublicKeyFile = filepath.Join(PWD, apiPublicKeyFile)
+// 	}
+// }
+
+//初始化api
 func InitApiGate() {
-	for i := 0; i < len(utils.ApiGateSlice); i++ {
-		ApiMap[utils.ApiGateSlice[i]] = []*ApiGate{}
-	}
-	// 初始化各个api网关类型对应的公钥私钥
-	context, err := utils.ReadFile(utils.PWD + "\\apiKeys.txt")
+	//=============从持久化文件加载api网关信息=============
+	f, err := os.Open(ApiDataFiles[0])
 	if err != nil {
-		log.Panicln("读取网关公钥私钥文件时报错: ", err, " 终止程序")
+		f, err = os.Open(ApiDataFiles[1])
+		if err != nil {
+			return
+		}
 	}
-	// ss := strings.Split(string(context), "@==@")
-	// if len(ss) != 2 {
-	// 	log.Panicln("网关公钥私钥文件格式错误, 终止程序")
-	// }
-	// publicKeys, privateKeys := ss[0], ss[1]
-	publicKeys := string(context)
-	err = json.Unmarshal([]byte(publicKeys), &ApiToPublicKey)
-	if err != nil {
-		log.Panicln("解析网关公钥报错: ", err, " 终止程序")
+	defer f.Close()
+
+	rd := bufio.NewReader(f)
+	data, err := rd.ReadBytes('\n')
+	if err != nil && err != io.EOF {
+		return
+	} else {
+		if err = json.Unmarshal(data, &ApiData); err != nil {
+			return
+		}
 	}
-	// err = json.Unmarshal([]byte(privateKeys), &ApiToPrivateKey)
-	// if err != nil {
-	// 	log.Panicln("解析网关私钥报错: ", err, " 终止程序")
-	// }
-	// log.Println("解析网关公钥私钥完成")
+
 }
 
+/*api网关注册，get请求入参：
+address:注册API的IP+port
+moduleID:模块ID
+timestamp:时间戳
+ciphertext:密文，通过ECC加密上面三个字段的hash
+*/
 func ApiRegist(w http.ResponseWriter, r *http.Request) {
-	//判断请求的ip是否在黑名单
+
+	//解析url参数
+	if err := r.ParseForm(); err != nil {
+		w.Write([]byte("请求URL错误: " + r.RequestURI))
+		return
+	}
+
+	// 参数校验
+	id, err := strconv.Atoi(r.FormValue("moduleID"))
+	if err != nil || id < 0 || id > MODULE_COUNT {
+		w.Write([]byte("请求参数moduleID错误"))
+		return
+	}
+	addr := r.FormValue("address")
 	ip := strings.Split(r.RemoteAddr, ":")[0]
-	if CheckBlackIp(ip) {
-		log.Printf("该地址%s在黑名单中, 已拦截\n", ip)
+	if ip != strings.Split(addr, ":")[0] {
+		w.Write([]byte("请求参数address与实际地址不一致"))
 		return
 	}
 
-	// 限流
-	ctx, _ := context.WithTimeout(context.Background(), utils.LinkTimeOut*time.Second)
-	err := utils.Limiter.Wait(ctx)
+	ApiRWLock.RLock()
+	for i := 0; i < ApiData[id].ApiCount; i++ {
+		if addr == ApiData[id].ApiAddrs[i] {
+			w.Write([]byte("此api网关已注册"))
+			return
+		}
+	}
+	ApiRWLock.RUnlock()
+
+	stamp, err := strconv.ParseInt(r.FormValue("timestamp"), 10, 64)
 	if err != nil {
-		log.Printf("主机%s因限流, 获取令牌失败: %+v", ip, err)
-		utils.WriteData(w, &utils.HttpRes{
-			Status: utils.HttpRefuse,
-			Data:   nil,
-		})
+		w.Write([]byte("请求参数timestamp错误"))
+		return
+	}
+	if time.Since(time.Unix(0, stamp)) > REGIST_REQUEST_TIMEOUT*time.Second {
+		w.Write([]byte("请求超时"))
+		return
+	}
+	ciphertext := r.FormValue("ciphertext")
+	if len(strings.Split(ciphertext, DIGITAL_SIGNATURE_CONNECTOR)) != 2 {
+		w.Write([]byte("请求参数ciphertext格式错误"))
 		return
 	}
 
-	// 首先得到请求的地址
-	// 获取api网关的端口号
-	log.Println("进入网关注册模块")
-	remotePort := r.Header.Get("port")
-	if remotePort == "" {
-		utils.WriteData(w, &utils.HttpRes{
-			Status: utils.HttpParamCheckFalse,
-			Data:   nil,
-		})
+	//验证数字签名
+	msg := fmt.Sprintf("%v%v%v", id, addr, stamp)
+	hash := sha256.Sum256([]byte(msg)) //生成摘要
+	signs := strings.Split(ciphertext, DIGITAL_SIGNATURE_CONNECTOR)
+	if err := utils.VerifySignECC(hash[:], []byte(signs[0]), []byte(signs[1]), ApiData[id].modulePublicKeyPath); err != nil {
+		w.Write([]byte("请求参数ciphertext错误"))
 		return
 	}
 
-	log.Println("获取api网关IP地址")
-	remoteAddr := strings.Split(r.RemoteAddr, ":")
-	// 获取该api网关ip
-	remoteIp := remoteAddr[0]
-	apiAddres := remoteIp + ":" + remotePort
-
-	log.Println("开始解析路由")
-	path := strings.Split(r.URL.Path, "/")
-	path = path[1:]
-	if path[len(path)-1] == "" {
-		path = path[:len(path)-1]
+	//通过校验，开始注册
+	ApiRWLock.Lock()
+	if ApiData[id].ApiCount == len(ApiData[id].ApiAddrs) {
+		ApiData[id].ApiAddrs = append(ApiData[id].ApiAddrs, addr)
+	} else {
+		ApiData[id].ApiAddrs[ApiData[id].ApiCount] = addr
 	}
-	// path此时只能形如 /apiRegist/login等
-	if len(path) != 2 {
-		log.Printf("网关%s的路由不正确\n", apiAddres)
-		utils.WriteData(w, &utils.HttpRes{
-			Status: utils.HttpUrlCheckFalse,
-			Data:   nil,
-		})
-		return
-	}
-	// 获取api网关种类
-	remoteType := path[1]
+	ApiData[id].ApiCount++
+	ApiRWLock.Unlock()
 
-	// 判断是否在api网关地址到随机字符串的映射里面
-	// 如果这个地址是第一次发来请求
-	ApiToRandomStringRWMutex.RLock()
-	if _, ok := ApiToRandomString[apiAddres]; !ok {
-		ApiToRandomStringRWMutex.RUnlock()
-		log.Printf("这是网关%s的第一次注册请求\n", apiAddres)
-		// 生成随机字符串
-		randomString := utils.GetRandomString(utils.LenOfKey)
-		// 随机字符串加密
-		encodedString, err := utils.Encrypt(randomString, ApiToPublicKey[remoteType])
-		if err != nil {
-			utils.WriteData(w, &utils.HttpRes{
-				Status: utils.HttpApiRegistFalse,
-				Data:   nil,
-			})
-			return
-		}
-		// 保存映射关系
-		ApiToRandomStringRWMutex.Lock()
-		ApiToRandomString[apiAddres] = randomString
-		ApiToRandomStringRWMutex.Unlock()
+	w.Write([]byte("ok"))
 
-		RandomStringToApiRWMutex.Lock()
-		RandomStringToApi[randomString] = apiAddres
-		RandomStringToApiRWMutex.Unlock()
-
-		// 把密文响应给该地址
-		utils.WriteData(w, &utils.HttpRes{
-			Status: utils.HttpSucceed,
-			Data: ApiRegistRes{
-				Token: string(encodedString),
-			},
-		})
-		log.Printf("已将密文响应给网关%s\n", apiAddres)
-		return
-	}
-	ApiToRandomStringRWMutex.RUnlock()
-	log.Printf("这不是网关%s的第一次注册请求\n", apiAddres)
-	// 如果这个地址不是第一次发来请求
-	// 检查字符串原文是否匹配
-
-	// 获取api网关发来的解密后的字符串
-	// 如果不匹配，响应错误信息
-	plainRandomString := r.Header.Get("token")
-	if plainRandomString == "" {
-		log.Printf("网关%s缺少解密后的字符串\n", apiAddres)
-		utils.WriteData(w, &utils.HttpRes{
-			Status: utils.HttpTokenCheckFalse,
-			Data:   nil,
-		})
-		return
+	//注册成功开启定时任务
+	select {
+	case Button <- struct{}{}:
+	default:
 	}
 
-	ApiToRandomStringRWMutex.RLock()
-	if plainRandomString != ApiToRandomString[apiAddres] {
-		ApiToRandomStringRWMutex.RUnlock()
-		log.Printf("网关%s解密后的字符串错误\n", apiAddres)
-		utils.WriteData(w, &utils.HttpRes{
-			Status: utils.HttpTokenCheckFalse,
-			Data:   nil,
-		})
-		return
-	}
-	ApiToRandomStringRWMutex.RUnlock()
+	//注册成功后进行持久化
+	PersistenceApi()
+}
 
-	RandomStringToApiRWMutex.RLock()
-	if _, ok := RandomStringToApi[plainRandomString]; !ok {
-		RandomStringToApiRWMutex.RUnlock()
-		log.Printf("找不到网关%s解密后的字符串对应的IP地址\n", apiAddres)
-		utils.WriteData(w, &utils.HttpRes{
-			Status: utils.HttpTokenCheckFalse,
-			Data:   nil,
-		})
-		return
+//api网关数据持久化
+func PersistenceApi() {
+	fileName := ""
+	if _, err := os.Stat(ApiDataFiles[0]); err != nil {
+		fileName = ApiDataFiles[0]
 	}
-	if RandomStringToApi[plainRandomString] != apiAddres {
-		RandomStringToApiRWMutex.RUnlock()
-		log.Printf("网关%s解密后的字符串与IP记录不匹配\n", apiAddres)
-		utils.WriteData(w, &utils.HttpRes{
-			Status: utils.HttpTokenCheckFalse,
-			Data:   nil,
-		})
-		return
+	if _, err := os.Stat(ApiDataFiles[1]); err != nil {
+		fileName = ApiDataFiles[1]
 	}
-	RandomStringToApiRWMutex.RUnlock()
+	if fileName == "" {
+		os.Remove(ApiDataFiles[0])
+		fileName = ApiDataFiles[0]
+	}
 
-	log.Printf("网关%s返回的字符串验证通过, 开始注册\n", apiAddres)
-	//判断ApiMap是否已存在，如果存在直接改状态
-	ApiMapRWMutex.Lock()
-	for i := 0; i < len(ApiMap[remoteType]); i++ {
-		gate := ApiMap[remoteType][i]
-		// 如果该类型下ip和端口都相同则认为是同一个api网关
-		if remoteIp == gate.Address && remoteIp == gate.Port {
-			// 将状态重新改回可用
-			ApiMap[remoteType][i].Status = 0
-			ApiMapRWMutex.Unlock()
-			log.Printf("网关%s注册成功\n", apiAddres)
-			utils.WriteData(w, &utils.HttpRes{
-				Status: utils.HttpSucceed,
-				Data:   nil,
-			})
-			return
-		}
-	}
-	// 生成ApiGate信息并注册到ApiMap中
-	apiGate := &ApiGate{
-		Address: remoteIp,
-		Port:    remotePort,
-		Type:    remoteType,
-		Index:   len(ApiMap[remoteType]),
-	}
-	ApiMap[remoteType] = append(ApiMap[remoteType], apiGate)
-	ApiMapRWMutex.Unlock()
+	ApiPersistenceLock.Lock()
+	defer ApiPersistenceLock.Unlock()
 
-	log.Printf("网关%s注册成功\n", apiAddres)
-	utils.WriteData(w, &utils.HttpRes{
-		Status: utils.HttpSucceed,
-		Data:   nil,
-	})
+	os.Create(fileName)
+	f, err := os.OpenFile(fileName, os.O_RDWR, 0666)
+	if err != nil {
+		log.Warn("打开api持久化文件错误")
+	}
+	ApiRWLock.RLock()
+	api, err := json.Marshal(ApiData)
+	ApiRWLock.RUnlock()
+	if err != nil {
+		log.Warn("json序列化错误,api网关持久化失败")
+	}
+	api = append(api, "\n"...)
+	f.Write(api)
+	log.Debug("api持久化成功！")
+	if fileName != ApiDataFiles[0] {
+		os.Remove(ApiDataFiles[0])
+	} else {
+		os.Remove(ApiDataFiles[1])
+	}
 }

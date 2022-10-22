@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package login;
+
+// protoc-gen-go 版本大于1.4.0, proto文件需要加上go_package,否则无法生成
+option go_package = "./login";
+
+message SendMsgRequest {
+    string mobileNum = 1;
+}
+message SendMsgResponse {}
+
+message EmployeeRequest {
+    string mobileNum = 1;
+}
+message EmployeeResponse {}
+
+service Login {
+    rpc sendMsg(SendMsgRequest)  returns (SendMsgResponse);
+    rpc addEmployee(EmployeeRequest) returns (EmployeeResponse);
+}
+
+goctl rpc protoc login.proto --go_out=./types --go-grpc_out=./types --zrpc_out=.

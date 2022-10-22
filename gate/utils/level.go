@@ -2,7 +2,7 @@ package utils
 
 import (
 	"encoding/json"
-	"log"
+	"gate/utils/log"
 	"os"
 	"os/exec"
 	"strconv"

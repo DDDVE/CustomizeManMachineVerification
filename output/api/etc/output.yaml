@@ -1,0 +1,15 @@
+Name: output
+Host: 0.0.0.0
+Port: 8888
+OutputRpc:
+  Etcd:
+    Hosts:
+    - 43.143.208.232:2379
+    Key: output.rpc
+Redis:
+  Host : 43.143.208.232:6379
+  Pass:
+  Network: tcp
+  MaxIdle: 0 
+  MaxActive: 0   # 0表示不限最大连接数
+  IdleTimeout: 300

@@ -1,0 +1,1 @@
+[{"ModuleID":0,"ApiCount":0,"ModuleName":"output","ApiAddrs":[]},{"ModuleID":1,"ApiCount":0,"ModuleName":"login","ApiAddrs":["127.0.0.1:8800"]},{"ModuleID":2,"ApiCount":0,"ModuleName":"edit","ApiAddrs":[]},{"ModuleID":3,"ApiCount":0,"ModuleName":"audit","ApiAddrs":[]},{"ModuleID":4,"ApiCount":0,"ModuleName":"feedback","ApiAddrs":[]}]

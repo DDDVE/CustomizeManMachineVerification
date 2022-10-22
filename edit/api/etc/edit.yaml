@@ -1,0 +1,8 @@
+Name: edit
+Host: 0.0.0.0
+Port: 8800
+EditRpc:
+  Etcd:
+    Hosts:
+    - 43.143.208.232:2379
+    Key: edit.rpc

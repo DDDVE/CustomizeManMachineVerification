@@ -1,49 +1,37 @@
 package main
 
 import (
-	"log"
-	"net/http"
-
-	"gate/schedule"
-	"gate/utils"
-
 	"gate/handler"
+	"gate/initialize"
+	"gate/middleware"
+	"gate/utils/log"
+	"net/http"
 )
 
+func init() {}
+
 func main() {
-	// 初始化服务降级
-	utils.InitLevel()
+	// 初始化网关相关任务
+	initialize.InitGate()
 
-	// 初始化周期生成平台密钥任务
-	go schedule.InitGenerateKeyScheTask()
-
-	// 初始化第一天的密钥
-	utils.InitFirstKey()
-
-	// 初始化api网关信息
-	handler.InitApiGate()
-
-	// 初始化api网关周期检查任务
-	go schedule.InitApiTestScheTask()
-
-	// 初始化黑名单数据
-	handler.InitBlackIp()
-
-	// 初始化令牌桶
-	utils.InitLimit()
-
-	// 登录
-	http.HandleFunc("/login/employee", handler.Login)
-	// 注册
-	//http.HandleFunc("/regist", handler.Regist)
+	// 使用全局中间件黑名单，限流,跨域
+	middleware.Use(middleware.BlackIP, middleware.Limit, middleware.CrossDomain)
 
 	// api网关注册
-	http.HandleFunc("/apiRegist/*", handler.ApiRegist)
+	// http.HandleFunc("/apiRegist", middleware.Handler(handler.ApiRegist))
 
-	// 进入拦截器判断
-	http.HandleFunc("/", handler.Intercept)
-	if err := http.ListenAndServe("localhost:8080", nil); err != nil {
-		log.Panic("启动监听失败")
+	// 登录相关请求
+	http.HandleFunc("/login/", middleware.Handler(handler.Login))
+
+	// 使用token校验中间件
+	// middleware.Use(middleware.TokenCheck)
+
+	// 其余请求进行转发
+	// http.HandleFunc("/", middleware.Handler(handler.DistributeReq))
+
+	log.Println("服务已启动")
+	if err := http.ListenAndServe("localhost:8802", nil); err != nil {
+		log.Panic("启动监听失败", err)
 		return
 	}
 }

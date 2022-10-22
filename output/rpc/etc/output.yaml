@@ -1,0 +1,19 @@
+Name: output.rpc
+ListenOn: 127.0.0.1:8080
+Etcd:
+  Hosts:
+  - 43.143.208.232:2379
+  Key: output.rpc
+Mysql:
+  DataSource: root:123456@tcp(43.143.208.232:3306)/cmmvplat?charset=utf8&parseTime=true&loc=Local
+  IdleConns: 1
+  OpenConns: 50
+  IdleTimeout : 300
+  LifeTimeout : 86400
+Redis:
+  Host : 43.143.208.232:6379
+  Pass: 
+  Network: tcp
+  MaxIdle: 0
+  MaxActive: 0   # 0表示不限最大连接数
+  IdleTimeout: 300

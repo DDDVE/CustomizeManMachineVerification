@@ -1,54 +1,81 @@
 package handler
 
 import (
-	"gate/utils"
+	"crypto/md5"
+	"encoding/binary"
+	"errors"
+	"gate/utils/log"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
+	"time"
 )
 
 /**
 此文件用于汇总handler包下的公共代码，避免冗余
 */
 
-// 循环遍历ApiMap，得到一个可用的或者报错
-func FindValidApiGate(start int, end int, apiType string) int {
-	for i := start; i < len(ApiMap[apiType]); i = (i + 1) % len(ApiMap[apiType]) {
-		// 如果遍历到终点还没有说明这种类型没有api网关可用
-		if i == end {
-			break
-		}
-		if ApiMap[apiType][i].Status == 0 {
-			return i
-		}
-	}
-	return -1
+//转发请求的客户端
+var client = &http.Client{
+	Timeout: 3 * time.Second,
 }
 
-// 公共的重定向方法
-func CommonRedirct(w http.ResponseWriter, r *http.Request, apiType string) {
-	// 通过负载均衡算法得到一个api网关的IP端口
-	ip := strings.Split(r.RemoteAddr, ":")[0]
-	pos := utils.FindApiGateToRedirect(apiType, ip)
+// 转发请求
+func forwardReq(req *http.Request, addr string) (resp []byte, err error) {
+	// 组装URL
+	u, err := url.Parse("http://" + addr + req.URL.String())
+	log.Debugf("URL:///-%v-///", u.String())
+	if err != nil {
+		log.Println("设置请求URL出错: ", err)
+		return nil, err
+	}
+	req.URL = u
+	req.Host = addr
+	// r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r, err := client.Do(req)
+	if err != nil {
+		log.Println("转发请求报错: ", err)
+		return nil, err
+	}
+	defer r.Body.Close()
+	if r.StatusCode/100 != 2 {
+		log.Println("转发请求错误码: ", r.StatusCode)
+		return nil, errors.New("转发请求失败，错误码: " + r.Status)
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Println("读取转发响应报错: ", err)
+		return nil, err
+	}
+	return body, nil
+}
 
-	// 加读锁
-	ApiMapRWMutex.RLock()
-	pos = pos % len(ApiMap[apiType])
-	// 如果该位置的api网关不可用，则往后遍历到一个可用的再转发
-	if ApiMap[apiType][pos].Status != 0 {
-		pos = FindValidApiGate(pos, pos, apiType)
+// 解析请求的模块名
+func getModuleID(path string) int {
+	ps := strings.Split(path, "/")
+	p := ps[1:]
+	if p[len(p)-1] == "" {
+		p = p[:len(p)-1]
 	}
-	// 如果返回-1表示没有可用的api网关
-	if pos == -1 {
-		utils.WriteData(w, &utils.HttpRes{
-			Status: utils.HttpRefuse,
-			Data:   nil,
-		})
-		return
+	moduleID := -1
+	for i := 0; i < MODULE_COUNT; i++ {
+		if ApiData[i].ModuleName == p[0] {
+			moduleID = i
+			break
+		}
 	}
-	redirectApiGate := ApiMap[apiType][pos]
-	// 重定向
-	w.Header().Set("location", redirectApiGate.Address+":"+redirectApiGate.Port)
-	// 解读锁
-	ApiMapRWMutex.RUnlock()
-	w.WriteHeader(http.StatusFound)
+	return moduleID
+}
+
+//返回哈希取余后对应的api网关地址
+func loadBalance(addr string, moduleID int) int {
+	h := md5.Sum([]byte(addr))
+	hash := [8]byte{}
+	for i := 0; i < 8; i++ {
+		hash[i] = h[i] ^ h[len(h)-1-i]
+	}
+	hashNum := binary.LittleEndian.Uint64(hash[:])
+	id := hashNum % uint64(ApiData[moduleID].ApiCount)
+	return int(id)
 }

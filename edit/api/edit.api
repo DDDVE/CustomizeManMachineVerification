@@ -1,0 +1,30 @@
+syntax = "v1"
+
+type (
+	ItemReq {
+		QuestionType  int    `json:"questionType"`
+		Question      string `json:"question"`
+		Answer        string `json:"answer"`
+		DisturbAnswer string `json:"disturbAnswer"`
+		MobileNum     string `json:"mobileNum"`
+	}
+	ItemReply struct{}
+
+	UserInfoReq {
+		MobileNum string `json:"mobileNum"`
+	}
+	UserInfoReply {
+		EmployeeLevel     int    `json:"employeeLevel"`
+		ContributionScore int    `json:"contributionScore"`
+		AuditScore        int    `json:"auditScore"`
+		RegistrationTime  string `json:"registrationTime"`
+	}
+)
+service edit {
+	@handler Item
+	post /edit/item (ItemReq) returns (ItemReply)
+	@handler UserInfo
+	get /edit/userInfo (UserInfoReq) returns (UserInfoReply)
+}
+
+goctl api go -api edit.api -dir .

@@ -1,0 +1,4 @@
+2022/10/18 11:52:27 pc, file, lineNo, ok 11289081 f:/cmmvpalt/gate/middleware/blackip_test.go 18 true
+2022/10/18 11:52:27 funcName fileName gate/middleware.TestMap blackip_test.go
+2022/10/18 11:58:22 pc, file, lineNo, ok 6963780 f:/cmmvpalt/gate/middleware/blackip_test.go 20 true
+2022/10/18 11:58:22 funcName fileName gate/middleware.TestMap blackip_test.go

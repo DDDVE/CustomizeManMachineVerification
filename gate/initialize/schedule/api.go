@@ -26,10 +26,14 @@ func InitApiTestScheTask() {
 		for i := 0; i < handler.MODULE_COUNT; i++ {
 			if handler.ApiData[i].ApiCount > 0 {
 				flag = false
+				break
 			}
 		}
+		log.Debug("api flag///", flag)
 		if flag {
+			log.Debug("无任何api网关，已阻塞///")
 			<-handler.Button
+			log.Debug("有api网关注册，开始周期性检查///")
 		}
 		ApiTestScheTask()
 	}
@@ -39,6 +43,7 @@ func ApiTestScheTask() {
 	for i := 0; i < handler.MODULE_COUNT; i++ {
 		if handler.ApiData[i].ApiCount > 0 {
 			handler.ApiRWLock.RLock()
+			log.Debug("开始发送心跳。。。", handler.ApiData[i].ModuleName)
 			for j := 0; j < handler.ApiData[i].ApiCount; j++ {
 				go testEachApi(i, handler.ApiData[i].ApiAddrs[j])
 			}
@@ -49,6 +54,7 @@ func ApiTestScheTask() {
 
 func testEachApi(moduleID int, address string) {
 	url := handler.REQUEST_URL_PREFIX + address + handler.REQUEST_URL_SUFFIX
+	log.Debug("发送心跳的URL：", url)
 	err := errors.New("")
 	for i := 0; i < handler.RETRY_TIMES; i++ {
 		log.Debugf("开始发送第%v次请求，adress:%v", i, address)
@@ -58,7 +64,7 @@ func testEachApi(moduleID int, address string) {
 		if err == nil {
 			break
 		}
-		time.Sleep(time.Second)
+		time.Sleep(handler.API_REQUEST_PERIOD * time.Second)
 	}
 	if err != nil {
 		log.Debug("开始删除此地址，address:", address)

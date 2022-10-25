@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"log"
 	"pkg/conf"
@@ -34,10 +35,14 @@ func NewEmployeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Employee
 }
 
 func (l *EmployeeLogic) Employee(req *types.EmployeeReq) (resp *types.EmployeeReply, err error) {
+	log.Printf("%v//////%v//////%v", req.MobileNum, req.MsgCode, req.Token)
+	mobile, err := base64.StdEncoding.DecodeString(req.MobileNum)
+	if err != nil {
+		return nil, err
+	}
 
-	log.Printf("%v,%v,%v", req.MobileNum, req.MsgCode, req.Token)
 	//简单参数校验
-	if matched, err := regexp.MatchString(REGEXP_MOBILENUM, req.MobileNum); err != nil || !matched || len(req.Token) != TOKEN_LENGHT {
+	if matched, err := regexp.MatchString(REGEXP_MOBILENUM, string(mobile)); err != nil || !matched || len(req.Token) != TOKEN_LENGHT {
 		return nil, errors.New(conf.GlobalError[conf.ILLEGAL_REQUEST])
 	}
 	if matched, err := regexp.MatchString(REGEXP_MSG_CODE, req.MsgCode); err != nil || !matched {
@@ -53,11 +58,12 @@ func (l *EmployeeLogic) Employee(req *types.EmployeeReq) (resp *types.EmployeeRe
 	}
 
 	//与缓存中的msgCode对比
-	msgCode, err := conn.Do("GET", KEY_PREFIX_MSG_CODE+req.MobileNum)
+	msgCode, err := conn.Do("GET", KEY_PREFIX_MSG_CODE+string(mobile))
+	log.Println("缓存中的msgCode为//////", msgCode)
 	if value, ok := msgCode.([]byte); !ok || string(value) != req.MsgCode || err != nil {
 		return nil, errors.New(conf.GlobalError[conf.MSG_CODE_ERROR])
 	}
-	if _, err = l.svcCtx.LoginRpc.AddEmployee(l.ctx, &loginclient.EmployeeRequest{MobileNum: req.MobileNum}); err != nil {
+	if _, err = l.svcCtx.LoginRpc.AddEmployee(l.ctx, &loginclient.EmployeeRequest{MobileNum: string(mobile)}); err != nil {
 		return nil, err
 	}
 	return &types.EmployeeReply{Token: ""}, nil

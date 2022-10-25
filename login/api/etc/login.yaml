@@ -1,6 +1,7 @@
 Name: login
-Host: 0.0.0.0
-Port: 8800
+Port: 8082
+CertFile: ../../pkg/conf/cmmvplat.com_bundle.crt
+KeyFile: ../../pkg/conf/cmmvplat.com.key
 LoginRpc:
   Etcd:
     Hosts:

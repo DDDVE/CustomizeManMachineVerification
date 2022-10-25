@@ -1,6 +1,7 @@
 Name: edit
-Host: 0.0.0.0
-Port: 8800
+Port: 8083
+CertFile: ../../pkg/conf/cmmvplat.com_bundle.crt
+KeyFile: ../../pkg/conf/cmmvplat.com.key
 EditRpc:
   Etcd:
     Hosts:

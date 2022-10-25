@@ -1,0 +1,1 @@
+[{"ModuleID":0,"ApiCount":1,"ModuleName":"output","ApiAddrs":["cmmvplat.com:8081"]},{"ModuleID":1,"ApiCount":1,"ModuleName":"login","ApiAddrs":["cmmvplat.com:8082"]},{"ModuleID":2,"ApiCount":1,"ModuleName":"edit","ApiAddrs":["cmmvplat.com:8083"]},{"ModuleID":3,"ApiCount":0,"ModuleName":"audit","ApiAddrs":[]},{"ModuleID":4,"ApiCount":0,"ModuleName":"feedback","ApiAddrs":[]}]

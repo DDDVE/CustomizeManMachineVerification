@@ -18,11 +18,11 @@ import (
 
 const (
 	MODULE_ID        = 2
-	ADDRESS          = "127.0.0.1:8800"
+	ADDRESS          = "cmmvplat.com:8083"
 	PRIVATE_KEY_PATH = "../pkg/conf/apiprivate.pem"
 
 	DIGITAL_SIGNATURE_CONNECTOR = "@==@"
-	REQUEST_ADDR                = "http://127.0.0.1:8080/apiRegist"
+	REQUEST_ADDR                = "https://cmmvplat.com:8888/apiRegist"
 )
 
 func ApiRegist() error {

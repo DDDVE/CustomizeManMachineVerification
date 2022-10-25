@@ -450,6 +450,8 @@ github.com/zeromicro/go-zero v1.4.1 h1:d8RriXk9v+ybbYzykF0Iqll7WWH9MrEmkozB3QLdP
 github.com/zeromicro/go-zero v1.4.1/go.mod h1:a9yJ89S84Fevv7s6kyLHcannCRoTmFw62J/Uw1AKoMU=
 github.com/zwh203080815/cmmvplat v0.0.0-20221013091614-5196e626ce6a h1:HSczfiWEQJJCozD+4u7AO1U+rofTJbOB3ZelAURG6DA=
 github.com/zwh203080815/cmmvplat v0.0.0-20221013091614-5196e626ce6a/go.mod h1:B6YDUGj4iMW5ceUXeSAxrU3u7AcQg3SwF2kn/ExhApA=
+github.com/zwh203080815/cmmvplat v0.0.0-20221023012407-7b63e22d4b77 h1:8IWhyNjA5De0GY9EcUsQy/340ZpN+SFWclD3dvWkYCI=
+github.com/zwh203080815/cmmvplat v0.0.0-20221023012407-7b63e22d4b77/go.mod h1:B6YDUGj4iMW5ceUXeSAxrU3u7AcQg3SwF2kn/ExhApA=
 go.etcd.io/etcd/api/v3 v3.5.5 h1:BX4JIbQ7hl7+jL+g+2j5UAr0o1bctCm6/Ct+ArBGkf0=
 go.etcd.io/etcd/api/v3 v3.5.5/go.mod h1:KFtNaxGDw4Yx/BA4iPPwevUTAuqcsPxzyX8PHydchN8=
 go.etcd.io/etcd/client/pkg/v3 v3.5.5 h1:9S0JUVvmrVl7wCF39iTQthdaaNIiAaQbmK75ogO6GU8=

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"log"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -47,12 +48,12 @@ func NewGetQuestionLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetQu
 }
 
 func (l *GetQuestionLogic) GetQuestion(req *types.QuestionReq) (resp *types.QuestionReply, err error) {
-
 	//调用output接口
-	data, err := call.GetQuestionByPath(QUESTION_TYPE, FIRM_ID, PRIVATE_KEY_PATH)
+	data, err := call.GetItemByPath(QUESTION_TYPE, FIRM_ID, PRIVATE_KEY_PATH)
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("questionData:%v", data)
 
 	//打乱答案顺序
 	randomAnswer := RandomAnswer(data.Answer, data.DisturbAnswer)
@@ -65,6 +66,7 @@ func (l *GetQuestionLogic) GetQuestion(req *types.QuestionReq) (resp *types.Ques
 		token[i] = TOKEN_SOURCE_STRING[int(b[i])%len(TOKEN_SOURCE_STRING)]
 	}
 
+	log.Println("生成的token为：", string(token[:]))
 	//将生成的token作为key,answer作为value存入Redis
 	conn := l.svcCtx.RedisPool.Get()
 	defer conn.Close()

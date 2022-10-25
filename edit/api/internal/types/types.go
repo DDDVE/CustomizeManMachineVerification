@@ -2,7 +2,7 @@
 package types
 
 type ItemReq struct {
-	QuestionType  int    `json:"questionType"`
+	QuestionType  string `json:"questionType"`
 	Question      string `json:"question"`
 	Answer        string `json:"answer"`
 	DisturbAnswer string `json:"disturbAnswer"`
@@ -13,7 +13,7 @@ type ItemReply struct {
 }
 
 type UserInfoReq struct {
-	MobileNum string `json:"mobileNum"`
+	MobileNum string `form:"mobileNum"`
 }
 
 type UserInfoReply struct {

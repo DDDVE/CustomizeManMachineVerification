@@ -2,7 +2,9 @@ package logic
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"log"
 	"pkg/conf"
 	"regexp"
 	"rpc/types/edit"
@@ -29,10 +31,17 @@ func NewUserInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UserInfo
 }
 
 func (l *UserInfoLogic) UserInfo(req *types.UserInfoReq) (resp *types.UserInfoReply, err error) {
-	if matched, err := regexp.MatchString(REGEXP_MOBILENUM, req.MobileNum); err != nil || !matched {
+
+	log.Printf("UserInfoReq///////////////////////////////////%+v", req)
+	mobile, err := base64.StdEncoding.DecodeString(req.MobileNum)
+	if err != nil {
+		return nil, err
+	}
+
+	if matched, err := regexp.MatchString(REGEXP_MOBILENUM, string(mobile)); err != nil || !matched {
 		return nil, errors.New(conf.GlobalError[conf.ILLEGAL_REQUEST])
 	}
-	uir, err := l.svcCtx.EditRpc.UserInfo(l.ctx, &edit.UserInfoRequest{MobileNum: req.MobileNum})
+	uir, err := l.svcCtx.EditRpc.UserInfo(l.ctx, &edit.UserInfoRequest{MobileNum: string(mobile)})
 	if err != nil {
 		return nil, err
 	}

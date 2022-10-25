@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"errors"
+	"log"
 	"math/rand"
 	"time"
 
@@ -36,12 +37,12 @@ func NewSendMsgLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendMsgLo
 }
 
 func (l *SendMsgLogic) SendMsg(in *login.SendMsgRequest) (*login.SendMsgResponse, error) {
-
+	log.Printf("in/////////%+v", in)
 	// 实例化一个认证对象，入参需要传入腾讯云账户secretId，secretKey,此处还需注意密钥对的保密
 	// 密钥可前往https://console.cloud.tencent.com/cam/capi网站进行获取
 	credential := common.NewCredential(
-		"AKIDztb6NTM0kJhU4SddT8cu0xjs57wVr1jF",
-		"OZZMuTr43nPs9D6oKdiaIqFXfcMvKXYM",
+		"AKID64whQ7e0CC1fBlNq8E8jeYMzVvGVb7ub",
+		"obHoIfvAMWXiopjXGWNnLkyzqeO5cEQZ",
 	)
 	// 实例化一个client选项，可选的，没有特殊需求可以跳过
 	cpf := profile.NewClientProfile()
@@ -55,6 +56,7 @@ func (l *SendMsgLogic) SendMsg(in *login.SendMsgRequest) (*login.SendMsgResponse
 	mobileNums := []string{}
 	msgCodes := []string{}
 	msgCode := generateMsgCode()
+	log.Println("生成的验证码是:", msgCode)
 	request.PhoneNumberSet = common.StringPtrs(append(mobileNums, in.MobileNum))
 	request.SmsSdkAppId = common.StringPtr("1400736497")
 	request.SignName = common.StringPtr("自定义人机验证码制作网站")
@@ -64,6 +66,7 @@ func (l *SendMsgLogic) SendMsg(in *login.SendMsgRequest) (*login.SendMsgResponse
 	// 返回的resp是一个SendSmsResponse的实例，与请求对象对应
 	response, err := client.SendSms(request)
 	if err != nil || *response.Response.SendStatusSet[0].Code != "Ok" {
+		log.Printf("response:///%+v", response)
 		return nil, errors.New(conf.GlobalError[conf.SEND_MSG_ERROR])
 	}
 	//缓存msgcode
@@ -73,6 +76,7 @@ func (l *SendMsgLogic) SendMsg(in *login.SendMsgRequest) (*login.SendMsgResponse
 		return nil, err
 	}
 
+	log.Println("发送短信验证码成功")
 	return &login.SendMsgResponse{}, nil
 }
 

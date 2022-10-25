@@ -14,7 +14,7 @@ const (
 	BLACK_FILE_PATH        = "./conf/blackip.txt"
 	BLACK_PERIOD_TASK      = 300
 	FIRST_STATISTIC_TIMES  = 10
-	SECOND_STATISTIC_TIMES = 60
+	SECOND_STATISTIC_TIMES = 100
 )
 
 var (

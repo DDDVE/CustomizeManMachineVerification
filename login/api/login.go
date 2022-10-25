@@ -8,7 +8,6 @@ import (
 	"api/internal/handler"
 	"api/internal/svc"
 	"pkg/apiregist"
-	"pkg/middleware"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -24,7 +23,7 @@ func init() {
 		Mode: "file",
 		Path: "../logs",
 	})
-	//api网关注册
+	// api网关注册
 	if err := apiregist.ApiRegist(); err != nil {
 		panic("api注册失败:" + err.Error())
 	}
@@ -40,7 +39,8 @@ func main() {
 	defer server.Stop()
 	ctx := svc.NewServiceContext(c)
 
-	server.Use(middleware.NewCrossDomain().Handler)
+	// 微服务网关设置了跨域，这里就不用设置跨域了，不然会报错
+	// server.Use(middleware.NewCrossDomain().Handler)
 	handler.RegisterHandlers(server, ctx)
 
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)

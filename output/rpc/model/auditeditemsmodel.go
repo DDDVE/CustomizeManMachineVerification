@@ -105,6 +105,8 @@ func (d *DefaultAuditedItemsModel) FindRandomOneByType(questionType uint32) (*Au
 	}
 
 	count++
+	log.Printf("查询条目表成功：%v", item)
+
 	return &item, nil
 }
 

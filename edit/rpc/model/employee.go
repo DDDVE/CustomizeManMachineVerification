@@ -1,6 +1,7 @@
 package model
 
 import (
+	"log"
 	"time"
 
 	"rpc/internal/svc"
@@ -33,9 +34,11 @@ func NewDefaultEmployeeModel(sc *svc.ServiceContext) EmployeeModel {
 
 func (d *DefaultEmployeeModel) SelectByMobile(mobile string) (*Employee, error) {
 	var e Employee
-	err := d.db.Select("question,answer,disturb_answer").Where("mobile_num = ?", mobile).Limit(1).Find(&e).Error
+	err := d.db.Select("employee_level, contribution_score, audit_score, registration_time").Where("mobile_num = ?", mobile).Limit(1).Find(&e).Error
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("查询员工表成功：%v", e)
+
 	return &e, nil
 }

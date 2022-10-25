@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"log"
 	"pkg/conf"
 	"pkg/crypto"
 	"rpc/types/output"
@@ -45,7 +46,7 @@ func NewOutputLogic(ctx context.Context, svcCtx *svc.ServiceContext) *OutputLogi
 }
 
 func (l *OutputLogic) CheckReq(req *types.OutputReq) error {
-
+	log.Printf("入参：%v////////////////////////", req)
 	// 参数校验
 	if req.QuestionType < QUESTION_TYPE_START || req.QuestionType > QUESTION_TYPE_END {
 		return errors.New(conf.GlobalError[conf.REQUEST_PARAM_ERROR] + ": questionType=" + strconv.Itoa(req.QuestionType))
@@ -102,6 +103,7 @@ func (l *OutputLogic) Output(req *types.OutputReq) (resp *types.OutputReply, err
 		return nil, err
 	}
 
+	log.Println("or.Question:///", or.Question)
 	return &types.OutputReply{
 		Question:      or.Question,
 		Answer:        or.Answer,

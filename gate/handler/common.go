@@ -3,10 +3,9 @@ package handler
 import (
 	"crypto/md5"
 	"encoding/binary"
-	"errors"
 	"gate/utils/log"
-	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"strings"
 	"time"
@@ -22,33 +21,37 @@ var client = &http.Client{
 }
 
 // 转发请求
-func forwardReq(req *http.Request, addr string) (resp []byte, err error) {
+func forwardReq(w http.ResponseWriter, r *http.Request, addr string) error {
 	// 组装URL
-	u, err := url.Parse("http://" + addr + req.URL.String())
-	log.Debugf("URL:///-%v-///", u.String())
+	log.Debug("addr//////////////////", addr)
+	remote, err := url.Parse("https://" + addr)
+	log.Debugf("URL:////////- %v -////////", remote.String())
 	if err != nil {
 		log.Println("设置请求URL出错: ", err)
-		return nil, err
+		return err
 	}
-	req.URL = u
-	req.Host = addr
-	// r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	r, err := client.Do(req)
-	if err != nil {
-		log.Println("转发请求报错: ", err)
-		return nil, err
-	}
-	defer r.Body.Close()
-	if r.StatusCode/100 != 2 {
-		log.Println("转发请求错误码: ", r.StatusCode)
-		return nil, errors.New("转发请求失败，错误码: " + r.Status)
-	}
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Println("读取转发响应报错: ", err)
-		return nil, err
-	}
-	return body, nil
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+	proxy.ServeHTTP(w, r)
+	return nil
+	// r.URL = remote
+	// r.Host = addr
+	// // r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// req, err := client.Do(r)
+	// if err != nil {
+	// 	log.Println("转发请求报错: ", err)
+	// 	return nil, err
+	// }
+	// defer req.Body.Close()
+	// if req.StatusCode/100 != 2 {
+	// 	log.Println("转发请求错误码: ", req.StatusCode)
+	// 	return nil, errors.New("转发请求失败，错误码: " + req.Status)
+	// }
+	// body, err := ioutil.ReadAll(req.Body)
+	// if err != nil {
+	// 	log.Println("读取转发响应报错: ", err)
+	// 	return nil, err
+	// }
+	// return body, nil
 }
 
 // 解析请求的模块名

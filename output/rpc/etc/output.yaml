@@ -1,5 +1,5 @@
 Name: output.rpc
-ListenOn: 127.0.0.1:8080
+ListenOn: :8881
 Etcd:
   Hosts:
   - 43.143.208.232:2379

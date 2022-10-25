@@ -41,13 +41,14 @@ const (
 	//api定时任务
 	REQUEST_TIMEOUT       = 3
 	API_GATE_CHECK_PERIOD = 10
-	REQUEST_URL_PREFIX    = "http://"
+	API_REQUEST_PERIOD    = 3
+	REQUEST_URL_PREFIX    = "https://"
 	REQUEST_URL_SUFFIX    = "/ping"
 )
 
 var (
-	Button             chan struct{} //控制定时任务的开关
-	ApiRWLock          sync.RWMutex  //
+	Button             = make(chan struct{}) //控制定时任务的开关
+	ApiRWLock          sync.RWMutex
 	ApiPersistenceLock sync.Mutex
 	ApiDataFiles       = [2]string{API_DATA_FILE_1, API_DATA_FILE_2}
 	apiPublicKeyFile   = API_PUBLIC_KEY_FILE
@@ -127,16 +128,18 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	addr := r.FormValue("address")
-	ip := strings.Split(r.RemoteAddr, ":")[0]
-	if ip != strings.Split(addr, ":")[0] {
-		w.Write([]byte("请求参数address与实际地址不一致"))
-		return
-	}
+	// 用域名注册就会有问题。。
+	// ip := strings.Split(r.RemoteAddr, ":")[0]
+	// if ip != strings.Split(addr, ":")[0] {
+	// 	w.Write([]byte("请求参数address与实际地址不一致"))
+	// 	return
+	// }
 
 	ApiRWLock.RLock()
 	for i := 0; i < ApiData[id].ApiCount; i++ {
 		if addr == ApiData[id].ApiAddrs[i] {
-			w.Write([]byte("此api网关已注册"))
+			w.Write([]byte("ok"))
+			ApiRWLock.RUnlock()
 			return
 		}
 	}
@@ -179,6 +182,7 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 
 	//注册成功开启定时任务
+
 	select {
 	case Button <- struct{}{}:
 	default:
@@ -186,10 +190,15 @@ func ApiRegist(w http.ResponseWriter, r *http.Request) {
 
 	//注册成功后进行持久化
 	PersistenceApi()
+
+	log.Info(ApiData[id].ModuleName, ",api网关注册成功!")
 }
 
 //api网关数据持久化
 func PersistenceApi() {
+	ApiPersistenceLock.Lock()
+	defer ApiPersistenceLock.Unlock()
+
 	fileName := ""
 	if _, err := os.Stat(ApiDataFiles[0]); err != nil {
 		fileName = ApiDataFiles[0]
@@ -198,12 +207,13 @@ func PersistenceApi() {
 		fileName = ApiDataFiles[1]
 	}
 	if fileName == "" {
+		log.Debug("两个文件都存在")
 		os.Remove(ApiDataFiles[0])
+		os.Remove(ApiDataFiles[1])
 		fileName = ApiDataFiles[0]
 	}
 
-	ApiPersistenceLock.Lock()
-	defer ApiPersistenceLock.Unlock()
+	log.Debug("即将创建的fileName:", fileName)
 
 	os.Create(fileName)
 	f, err := os.OpenFile(fileName, os.O_RDWR, 0666)

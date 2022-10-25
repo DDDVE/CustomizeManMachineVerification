@@ -3,14 +3,9 @@ package handler
 import (
 	"gate/utils"
 	"gate/utils/log"
-	"gate/utils/token"
 	"net/http"
 	"strings"
 )
-
-type LoginData struct {
-	Token string `json:"token"`
-}
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	requestID := r.Header.Get("requestID")
@@ -19,37 +14,37 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	//不合法的URL直接在降级中间件过滤掉，所以这里暂不做细致校验
 	if r.Method != http.MethodGet && r.Method != http.MethodPost {
 		utils.RespFormat(w, utils.REQUEST_METHOD_ERROR, nil)
-	}
-	//如果是登录提交表单请求成功则签发token
-	path := strings.Split(r.URL.Path, "/")
-	p := ""
-	if len(path) >= 3 {
-		p = path[2]
-	}
-	if p == "employee" {
-		r.ParseForm()
-		log.Debug("r.PostForm[\"mobileNum\"][0]:////", r.Form["mobileNum"][0])
-		token := token.GenerateToken(r.Form["mobileNum"][0])
-		log.Debug("生成的token:///", token)
-		w.Header().Add("Access-Control-Expose-Headers", "Authorization, Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type")
-		w.Header().Add("Authorization", token)
+		return
 	}
 	//解析请求的模块名
 	moduleID := getModuleID(r.URL.Path)
 	if moduleID == -1 {
 		utils.RespFormat(w, utils.REQUEST_PATH_ERROR, nil)
+		return
 	}
+	log.Debug("解析请求的模块ID:", moduleID)
 
 	//通过对userAddr哈希取余方式负载均衡
 	id := loadBalance(r.RemoteAddr, moduleID)
 
-	//转发请求
-	resp, err := forwardReq(r, ApiData[moduleID].ApiAddrs[id])
-	if err != nil {
-		utils.RespUnknownErr(w, err)
+	//如果是登录提交表单请求,则需要判读结果签发token
+	path := strings.Split(r.URL.Path, "/")
+	if len(path) >= 3 && path[2] == "employee" {
+		Employee(w, r, ApiData[moduleID].ApiAddrs[id])
+		return
 	}
 
-	w.Write(resp)
+	//转发请求
+	err := forwardReq(w, r, ApiData[moduleID].ApiAddrs[id])
+	if err != nil {
+		utils.RespUnknownErr(w, err)
+		return
+	}
+
+	// type LoginData struct {
+	// 	Token string `json:"token"`
+	// }
+	// w.Write(resp)
 
 	// 查找可用的login类型api网关
 	// pos := utils.FindApiGateToRedirect(utils.TypeOfApiLogin, ip)

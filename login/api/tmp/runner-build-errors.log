@@ -1,0 +1,2 @@
+# api/internal/logic
+internal\logic\employeelogic.go:66:91: cannot use mobile (variable of type []byte) as type string in struct literal

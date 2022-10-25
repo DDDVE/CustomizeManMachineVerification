@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 
 	"rpc/internal/config"
 	"rpc/internal/server"
@@ -21,11 +21,11 @@ var configFile = flag.String("f", "etc/output.yaml", "the config file")
 
 func init() {
 	logx.DisableStat()
-	logx.SetLevel(1)
-	logx.SetUp(logx.LogConf{
-		Mode: "file",
-		Path: "../logs",
-	})
+	// logx.SetLevel(1)
+	// logx.SetUp(logx.LogConf{
+	// 	Mode: "file",
+	// 	Path: "../logs",
+	// })
 }
 
 func main() {
@@ -44,8 +44,8 @@ func main() {
 	})
 	defer s.Stop()
 
-	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
+	log.Printf("Starting rpc server at %s...\n", c.ListenOn)
 	s.Start()
 }
 
-//go run output.go -f etc/output.yaml
+//fresh output.go -f etc/output.yaml

@@ -2,7 +2,9 @@ package logic
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"log"
 	"pkg/conf"
 	"regexp"
 	"rpc/loginclient"
@@ -31,8 +33,14 @@ func NewSendMsgLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendMsgLo
 
 func (l *SendMsgLogic) SendMsg(req *types.SendMsgReq) (resp *types.SendMsgReply, err error) {
 
+	mobile, err := base64.StdEncoding.DecodeString(req.MobileNum)
+	log.Println("base64解码后的手机号为///////////", string(mobile))
+	if err != nil {
+		return nil, err
+	}
+
 	//简单参数校验
-	if matched, err := regexp.MatchString(REGEXP_MOBILENUM, req.MobileNum); err != nil || !matched || len(req.Token) != TOKEN_LENGHT {
+	if matched, err := regexp.MatchString(REGEXP_MOBILENUM, string(mobile)); err != nil || !matched || len(req.Token) != TOKEN_LENGHT {
 		return nil, errors.New(conf.GlobalError[conf.ILLEGAL_REQUEST])
 	}
 	//缓存中token是否存在
@@ -44,8 +52,8 @@ func (l *SendMsgLogic) SendMsg(req *types.SendMsgReq) (resp *types.SendMsgReply,
 		return nil, errors.New(conf.GlobalError[conf.ILLEGAL_REQUEST])
 	}
 
-	if _, err = l.svcCtx.LoginRpc.SendMsg(l.ctx, &loginclient.SendMsgRequest{MobileNum: req.MobileNum}); err != nil {
-		return nil, errors.New(conf.GlobalError[conf.SEND_MSG_ERROR])
+	if _, err = l.svcCtx.LoginRpc.SendMsg(l.ctx, &loginclient.SendMsgRequest{MobileNum: string(mobile)}); err != nil {
+		return nil, err
 	}
 
 	return

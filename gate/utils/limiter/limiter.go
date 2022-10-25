@@ -12,20 +12,20 @@ var (
 	flag     bool       //是否正在填充令牌
 	flagLock sync.Mutex //只在改变flag时加的锁
 
-	ticker *time.Ticker                        //定时任务
-	button chan struct{} = make(chan struct{}) //定时任务开关
+	ticker *time.Ticker                       //定时任务
+	button              = make(chan struct{}) //定时任务开关
 
-	fillTokenPeriod      int = 500 //填充token周期,单位ms
-	loopWaitTime         int = 500 //每次循环等待时间,单位ms
-	percentOfStartTicker int = 90  //桶在什么时候开始填充桶，单位%，即令牌数在桶90%之下开始填充桶
+	fillTokenPeriod int = 100 //填充token周期,单位ms
+	loopWaitTime    int = 100 //每次循环等待时间,单位ms
 )
 
 type Limiter struct {
-	bucketSize  int    //令牌桶大小
-	rate        int    //每秒放入令牌速度
-	numOfPer    uint32 //每次循环填充的令牌数量
-	warningLine uint32 //剩余令牌数量到警戒线之下则不能取令牌,暂定rate/5
-	remainToken uint32 //剩余令牌
+	bucketSize       int    //令牌桶大小
+	rate             int    //每秒放入令牌速度
+	numOfPer         uint32 //每次循环填充的令牌数量
+	remainToken      uint32 //剩余令牌
+	warningLine      uint32 //剩余令牌数量到警戒线之下则不能取令牌,暂定rate/5
+	numOfStartTicker uint32 //开始填充桶时的令牌数量，暂定bucketSize-rate/3
 }
 
 func NewLimiter(bucketSize int, rate int) *Limiter {
@@ -34,11 +34,12 @@ func NewLimiter(bucketSize int, rate int) *Limiter {
 		pernum = 1
 	}
 	ler := &Limiter{
-		bucketSize:  bucketSize,
-		rate:        rate,
-		numOfPer:    uint32(pernum),
-		warningLine: uint32(rate) / 5,
-		remainToken: uint32(bucketSize),
+		bucketSize:       bucketSize,
+		rate:             rate,
+		numOfPer:         uint32(pernum),
+		remainToken:      uint32(bucketSize),
+		warningLine:      uint32(rate) / 5,
+		numOfStartTicker: uint32(bucketSize - rate/3),
 	}
 	go ler.newScheduleTask()
 	return ler
@@ -87,7 +88,7 @@ func (l *Limiter) GetTokenAtOnce() bool {
 //通知填充桶的定时任务开始工作
 func (l *Limiter) startFillToken() {
 	//如果正在填充令牌或桶令牌还比较满，则直接返回
-	if flag || l.remainToken >= uint32(l.bucketSize*percentOfStartTicker/100) {
+	if flag || l.remainToken >= l.numOfStartTicker {
 		return
 	}
 	flagLock.Lock()

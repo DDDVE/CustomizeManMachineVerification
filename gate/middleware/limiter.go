@@ -44,7 +44,7 @@ func Limit(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		//生成全局唯一RequestID
+		//生成全局唯一RequestID/唯一主键
 		requestID := strconv.FormatInt(time.Now().UnixNano(), 10) + MACHINE_NO + strconv.Itoa(i)
 		r.Header.Add("requestID", requestID)
 

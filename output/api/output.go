@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"pkg/apiregist"
 
 	"api/internal/config"
 	"api/internal/handler"
 	"api/internal/svc"
-	"pkg/apiregist"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -19,11 +19,12 @@ var configFile = flag.String("f", "etc/output.yaml", "the config file")
 func init() {
 	//close statis log
 	logx.DisableStat()
-	logx.SetLevel(1)
-	logx.SetUp(logx.LogConf{
-		Mode: "file",
-		Path: "../logs",
-	})
+	// logx.SetLevel(1)
+	// logx.SetUp(logx.LogConf{
+	// 	Mode: "file",
+	// 	Path: "../logs",
+	// })
+
 	//api网关注册
 	if err := apiregist.ApiRegist(); err != nil {
 		panic("api注册失败:" + err.Error())

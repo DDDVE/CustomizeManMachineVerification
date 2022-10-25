@@ -14,6 +14,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
+				Path:    "/ping",
+				Handler: pongHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/output",
 				Handler: outputHandler(serverCtx),
 			},

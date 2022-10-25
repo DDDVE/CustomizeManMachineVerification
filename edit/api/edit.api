@@ -2,7 +2,7 @@ syntax = "v1"
 
 type (
 	ItemReq {
-		QuestionType  int    `json:"questionType"`
+		QuestionType  string `json:"questionType"`
 		Question      string `json:"question"`
 		Answer        string `json:"answer"`
 		DisturbAnswer string `json:"disturbAnswer"`
@@ -11,7 +11,7 @@ type (
 	ItemReply struct{}
 
 	UserInfoReq {
-		MobileNum string `json:"mobileNum"`
+		MobileNum string `form:"mobileNum"`
 	}
 	UserInfoReply {
 		EmployeeLevel     int    `json:"employeeLevel"`

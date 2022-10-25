@@ -35,6 +35,6 @@ func (l *UserInfoLogic) UserInfo(in *edit.UserInfoRequest) (*edit.UserInfoRespon
 		EmployeeLevel:     strconv.Itoa(int(e.EmployeeLevel)),
 		AuditScore:        strconv.Itoa(int(e.AuditScore)),
 		ContributionScore: strconv.Itoa(int(e.ContributionScore)),
-		RegistrationTime:  e.RegistrationTime.Format("2006-01-02 15:04:05"),
+		RegistrationTime:  e.RegistrationTime.Format("2006-01-02"),
 	}, nil
 }

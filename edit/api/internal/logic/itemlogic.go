@@ -2,11 +2,12 @@ package logic
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"log"
 	"pkg/conf"
 	"regexp"
 	"rpc/types/edit"
-	"strconv"
 
 	"api/internal/svc"
 	"api/internal/types"
@@ -31,13 +32,19 @@ func NewItemLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ItemLogic {
 }
 
 func (l *ItemLogic) Item(req *types.ItemReq) (resp *types.ItemReply, err error) {
+
+	log.Printf("ItemReq//////////////////////////%+v", req)
+	mobile, err := base64.StdEncoding.DecodeString(req.MobileNum)
+	if err != nil {
+		return nil, err
+	}
 	//简单参数校验
-	if matched, err := regexp.MatchString(REGEXP_MOBILENUM, req.MobileNum); err != nil || !matched {
+	if matched, err := regexp.MatchString(REGEXP_MOBILENUM, string(mobile)); err != nil || !matched {
 		return nil, errors.New(conf.GlobalError[conf.ILLEGAL_REQUEST])
 	}
 	if _, err := l.svcCtx.EditRpc.SubmitItem(l.ctx, &edit.ItemRequest{
-		MobileNum:     req.MobileNum,
-		QuestionType:  strconv.Itoa(req.QuestionType),
+		MobileNum:     string(mobile),
+		QuestionType:  req.QuestionType,
 		Question:      req.Question,
 		Answer:        req.Answer,
 		DisturbAnswer: req.DisturbAnswer,

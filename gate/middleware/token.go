@@ -15,6 +15,11 @@ func TokenCheck(next http.HandlerFunc) http.HandlerFunc {
 		id, mobileNum := token.CheckToken(userToken)
 		log.Debug("id:///", id, "mobileNum:///", mobileNum)
 		if id == -1 {
+			//检查token，用于跳过登录页面
+			if strings.Contains(r.URL.Path, "checktoken") {
+				utils.RespFormat(w, utils.SUCCESS, false)
+				return
+			}
 			utils.RespFormat(w, utils.TOKEN_CHECK_ERROR, nil)
 			return
 		}
@@ -23,9 +28,10 @@ func TokenCheck(next http.HandlerFunc) http.HandlerFunc {
 			w.Header().Add("Access-Control-Expose-Headers", "Authorization, Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type")
 			w.Header().Add("Authorization", token)
 		}
+
 		//检查token，用于跳过登录页面
 		if strings.Contains(r.URL.Path, "checktoken") {
-			utils.RespFormat(w, utils.SUCCESS, nil)
+			utils.RespFormat(w, utils.SUCCESS, true)
 			return
 		}
 

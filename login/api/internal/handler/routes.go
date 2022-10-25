@@ -13,26 +13,31 @@ import (
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
+			// {
+			// 	Method: http.MethodOptions,
+			// 	Path: "/login/question",
+			// 	Handler: func(w http.ResponseWriter, r *http.Request) {
+			// 	},
+			// },
+			// {
+			// 	Method: http.MethodOptions,
+			// 	Path: "/login/isAnswer",
+			// 	Handler: func(w http.ResponseWriter, r *http.Request) {},
+			// },
+			// {
+			// 	Method: http.MethodOptions,
+			// 	Path: "/login/sendMsg",
+			// 	Handler: func(w http.ResponseWriter, r *http.Request) {},
+			// },
+			// {
+			// 	Method: http.MethodOptions,
+			// 	Path: "/login/employee",
+			// 	Handler: func(w http.ResponseWriter, r *http.Request) {},
+			// },
 			{
-				Method: http.MethodOptions,
-				Path: "/login/question",
-				Handler: func(w http.ResponseWriter, r *http.Request) {
-				},
-			},
-			{
-				Method: http.MethodOptions,
-				Path: "/login/isAnswer",
-				Handler: func(w http.ResponseWriter, r *http.Request) {},
-			},
-			{
-				Method: http.MethodOptions,
-				Path: "/login/sendMsg",
-				Handler: func(w http.ResponseWriter, r *http.Request) {},
-			},
-			{
-				Method: http.MethodOptions,
-				Path: "/login/employee",
-				Handler: func(w http.ResponseWriter, r *http.Request) {},
+				Method:  http.MethodGet,
+				Path:    "/ping",
+				Handler: pongHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,

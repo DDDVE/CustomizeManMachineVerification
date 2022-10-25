@@ -1,7 +1,9 @@
 package schedule
 
 import (
+	"gate/middleware"
 	"gate/utils/log"
+	"gate/utils/syncmap"
 	"gate/utils/token"
 	"time"
 )
@@ -40,6 +42,8 @@ func InitGenerateKeyScheTask() {
 	}()
 
 	for range ticker.C {
+		//暂时将清空黑名单的任务写这里
+		middleware.BlackIpMap = &syncmap.SyncMap{}
 		token.GetRandomKey()
 	}
 }

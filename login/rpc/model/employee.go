@@ -1,10 +1,9 @@
 package model
 
 import (
-	"errors"
+	"log"
 	"time"
 
-	"pkg/conf"
 	"rpc/internal/svc"
 
 	"github.com/garyburd/redigo/redis"
@@ -37,9 +36,10 @@ func (d *DefaultEmployeeModel) Insert(e *Employee) error {
 	count := 0
 	d.db.Model(&Employee{}).Where("mobile_num = ?", e.MobileNum).Limit(1).Count(&count)
 	if count == 0 {
-		if !d.db.NewRecord(*e) {
-			return errors.New(conf.GlobalError[conf.INSERT_DATA_ERROR])
-		}
+		e.RegistrationTime = time.Now()
+		d.db.Create(e)
 	}
+	log.Printf("插入员工表表成功：%v", e)
+
 	return nil
 }
